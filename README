@@ -1,0 +1,38 @@
+The LAGO Analysis suite
+=======================
+
+CODENAME:	ANNA
+COPYRIGHT:	(C) 2012-today The LAGO Project, http://lagoproject.org, lago@lagoproject.org
+LICENCE:	GPLv3 (see gpl-3.0.txt or https://gnu.org/licenses/gpl.html)
+PHILOSOPHY:	Free as in Freedom. All our codes are, and always will be, public and open source
+REPOSITORY:	https://github.com/lagoproject
+ORIGINAL:	Hernán Asorey - 2012, asoreyh@cab.cnea.gov.ar (asoreyh@gmail.com)
+
+DESCRIPTION:
+This is the LAGO data analysis suite. It consists in several files that allow to interact with the different types of data present in the LAGO project. It derive from the lago-process data analysis tools.
+
+lago_file.h: handle different lago data structure files
+lago_data.h: Data analysis library
+lago_defs.h: LAGO definitions for this suite
+
+raw.cc: analyzed "raw" (L0) data and produce the preprocessed "preliminary" (L1) data set.
+sol.cc: code oriented to perform Space Weather related analysis from 1-minute histograms
+grb.cc: code oriented to perform GRB analysis
+
+more fun to come
+
+CONTRIBUTORS: 
+If you want to contribute to this project please send me an email (asoreyh@gmail.com) and remember this guidelines: 
+
+FILE ENCODING:	UTF8 (please use iconv -f YOUR_ENCODING -t UTF-8 file_to_convert > converted_file before to push)
+LANGUAGE:		English (preferred)
+INDENT STYLE:	Stroustrup (see http://en.wikipedia.org/wiki/Indent_style#Variant:_Stroustrup)
+				1 tab = 4 columns wide (for vim setup see http://tedlogan.com/techblog3.html)
+				Avoid evil whitespaces, use tab instead (Don't commit evil into your repo: http://bit.ly/1K0vQnf )
+				If you prefer, please use: astyle -t4 -A4 -y file_to_convert  before to push
+VERSIONING:		Sequence-based identifiers, v<version>r<release>. First public release: v1r0
+TAGGING:		Please don't tag over our repo.
+
+INSTALL:
+
+After installing dependences (only need make, g++ and common libraries), just run make. 
