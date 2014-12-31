@@ -68,6 +68,32 @@ double itpl_chr(double *pos_avg, double *chr_avg, int i, double x) {
 	return (y0 + (y1 - y0) * (x - x0) / (x1 - x0));
 }
 
+double fitHisto(int xi, int xf, int* h, double* r) {
+  double y1, x1, x2, x3, x4, xy, x2y, x, y, v1, v2, v;
+  v = v1 = v2 = x = y = y1 = x1 = x2 = x3 = x4 = xy = x2y = 0.0;
+  int n = 0;
+  for (int i = xi; i <= xf; i++) {
+    x = i;
+    y = (double) h[i];
+    x1 += x;
+    y1 += y;
+    xy += x * y;
+    x *= i;
+    x2 += x;
+    x2y += x * y;
+    x *= i;
+    x3 += x;
+    x *= i;
+    x4 += x;
+    n++;
+  }
+  v1 = x1 * x2 * x2y - n * x2y * x3 - x2 * x2 * xy + n * x4 * xy + x2 * x3 * y1 - x1 * x4 * y1;
+  v2 = x1 * x1 * x2y - n * x2 * x2y + n * x3 * xy + x2 * x2 * y1 - x1 * (x2 * xy + x3 * y1);
+  v = v1 / (2.0 * v2); // note v1 = -a1 and v2 = a2, so we have v = -b / 2a !
+  *r = y1;
+  return v;
+}
+
 void Usage(char *prog) {
 	cout << endl << PROJECT << " " << VERSION << endl;
 	cout << endl << "This is the Space Weather dedicated analysis (L1 -> L2SW)" << endl<< endl;
@@ -180,7 +206,7 @@ int main (int argc, char *argv[]) {
 
 	/* preparing outputs */
 	char *ifile2;
-	char ifile[256];
+	char ifile[256], ifile0[256];
 	ifile2=ifiname;
 	if (strrchr(ifile2,'/')!=NULL)
 		ifile2=strrchr(ifile2,'/')+1;      // remove dirs if present
@@ -191,6 +217,7 @@ int main (int argc, char *argv[]) {
 	if (strrchr(ifile,'.')!=NULL)
 		if (strncmp(strrchr(ifile,'.'),".sol",4)==0) // remove .sol if present
 			*(strrchr(ifile,'.'))='\0';
+	strcpy(ifile0,ifile);
 	if (strncmp(ifile,"l1_",3)==0) {
 		*(strchr(ifile,'1'))='2';  // change l1 by l2
 	}
@@ -198,7 +225,6 @@ int main (int argc, char *argv[]) {
 		cerr << endl << "\nError: You should use a L1 sol file (starting with l1_)" << endl << endl;
 		Usage(argv[0]);
 	}
-
 
 	/* end of preparing outputs */
 
@@ -275,7 +301,119 @@ int main (int argc, char *argv[]) {
 	char line[16384];
 	double fluxband[nbands];
 	int currentpos=0, pos=0, i=0, is=0, j=0,k=0;
+	/// New analysis done by Y. Perez and H. Asorey
+	///// Obtain muon charge and other features from cal histogram
+	///// and use them for determining bands of interest
+	///// underway: mar dic 30 23:38:56 COT 2014
+	/* now, we have to read calibration (1h) histogram from ifile.cal, so:
+	 * trying to open histogram file
+	 */
+	snprintf(nfi,256,"%s.cal",ifile0);
+	if ((cal = fopen(nfi,"r"))==NULL) {
+		fprintf(stderr,"\nError: Failed to open calibration histogram file (%s). Abort.\n",nfi);
+		exit(1);
+	}
+	/* read the histogram */
+	fprintf(stderr,"Reading calibration histogram %s\n",nfi);
+	int p[3], c[3], charge[maxcharge];
+	int cline=0, ncharge=0;
+	while(fgets(line, 16384,cal)) {
+		cline++;
+		if (line[0] == '#')   // comments? meta-data? for now, just skipping
+			continue;
+		if (cline < 1028) {
+			do { // read
+				check=sscanf(line, "%d %d %d %d %d %d\n", &c[0], &c[1], &c[2], &p[0], &p[1], &p[2]);
+			} while (check != 6);
+		}
+		else {
+			do { // read
+				check=sscanf(line, "%d %d %d\n", &c[0], &c[1], &c[2]);
+			} while (check != 3);
+		}
+		if (ncharge>maxcharge)
+			fprintf(stderr,"Warning: Too long charge histogram. It has %d lines (expected lines = %d)\n", ncharge, maxcharge);
+		charge[ncharge] = c[channel];
+		ncharge++;
+	}
+	fclose(cal);
+	/* now, charge[] has the charge histogram for the analyzed channel
+	 * average it!, but, graded 
+	 */
+	int l1 = 200;	/* Yunior used this cut . If charge < l1, ds=6; else ds = 25
+					 * I put ds=5 as a multiple of l1
+					 */
+	int sum = 0, cnt_avg=0;
+	double chr_avg[maxcharge], pos_avg[maxcharge];
+	for (i=0; i<maxcharge; i++)
+		chr_avg[i] = pos_avg[i] = 0.;
+	int step=0;
+	/* low energy */
+	step=5;
+	for (i=0; i<l1; i+=step) {
+		sum = 0;
+		for (j=0; j<step; j++)
+			sum += charge[i+j];
+		chr_avg[cnt_avg]=sum/step;
+		pos_avg[cnt_avg]=i+step/2.;
+		cnt_avg++;
+	}
+	/* high energy */
+	step=50;
+	for (i=l1; i<maxcharge; i+=step) {
+		sum = 0;
+		for (j=0; j<step; j++)
+			sum += charge[i+j];
+		chr_avg[cnt_avg]=sum/step;
+		pos_avg[cnt_avg]=i+step/2.;
+		cnt_avg++;
+	}
+	/* Histogram are averaged. Now, derive it! */
+	cnt_avg-=2; //avoid last average point because it's usally too noise
+	double chr_der[cnt_avg];
+	for (i=0; i<cnt_avg; i++) //taking logs to magnify the effect (thanks Mauricio Suarez)
+		chr_der[i] = ((log10(chr_avg[i+1])-log10(chr_avg[i]))/(pos_avg[i+1]-pos_avg[i]));
+	// looking for 0s on histogram derivative...
+	double zeros[cnt_avg], zeros_pos[cnt_avg];
+	int cnt_zeros=0;
+	for (i=0; i<cnt_avg; i++)
+		zeros_pos[i]=zeros[i]=0.;
+	for (i=0; i<cnt_avg-1; i++) {
+		if (!sign(chr_der[i])) { // bingo... too good to be true
+			zeros_pos[cnt_zeros]=(double) i;
+			zeros[cnt_zeros]=chr_avg[i]; // charge
+			cnt_zeros++;
+		}
+		else if (sign(chr_der[i+1]) != sign(chr_der[i])) { // Bolzano's theorem!!
+			zeros_pos[cnt_zeros]=itpl_pos(pos_avg, chr_der,i);
+			zeros[cnt_zeros]=itpl_chr(pos_avg, chr_avg, i, zeros_pos[cnt_zeros]);
+			cnt_zeros++;
+		}
+	}
+	/* So, we have the histogram seeds, let's fit them */
+	double tmpk=0.;
+	double feat[3];
+	// TODO erase this block, only for debbuging of fitting procedure
+	snprintf(nfi,256,"%s.pos",ifile);
+	FILE *pof;
+	if ((pof = fopen(nfi,"w"))==NULL) {
+		fprintf(stderr,"\nError: Failed to open pos file. Abort.\n");
+		exit(1);
+	}
+	//
 
+	for (i=0; i<3; i++) {
+		feat[i] = fitHisto(int(zeros_pos[i]*0.9), int(zeros_pos[i]*1.3), charge, &tmpk);
+		// TODO erase this block, only for debbuging of fitting procedure
+		do {
+			check=fprintf(pof, "%d %.3f %.3f\n", i, zeros_pos[i], feat[i]);
+		} while (check<=0);
+	}
+	/* and done. We found the EM peak, the transition to hump, and the muon hump
+	 * of the calibration histogram, in charge units =D
+	 */
+
+	/////// HERE ENDS THE NEW BLOCK - WAITING FOR YUNIOR TESTS ON DATA TO INCLUDE
 	/* analyze the .sol histograms */
 
 	while(fgets(line, 16384,fi)) {
@@ -341,4 +479,6 @@ int main (int argc, char *argv[]) {
 		pclose(out);
 	else
 		fclose(out);
+	// TODO erase this block, only for debbuging of fitting procedure
+	fclose(pof);
 }
