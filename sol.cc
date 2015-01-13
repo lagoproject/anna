@@ -90,7 +90,7 @@ double fitHisto(int xi, int xf, int* h, double* r) {
   v1 = x1 * x2 * x2y - n * x2y * x3 - x2 * x2 * xy + n * x4 * xy + x2 * x3 * y1 - x1 * x4 * y1;
   v2 = x1 * x1 * x2y - n * x2 * x2y + n * x3 * xy + x2 * x2 * y1 - x1 * (x2 * xy + x3 * y1);
   v = v1 / (2.0 * v2); // note v1 = -a1 and v2 = a2, so we have v = -b / 2a !
-  *r = y1;
+  *r = 0.;
   return v;
 }
 
@@ -390,9 +390,56 @@ int main (int argc, char *argv[]) {
 			cnt_zeros++;
 		}
 	}
+	// check for NaN
+	for (i=0; i < cnt_zeros ; i++)
+		if (zeros_pos[i] != zeros_pos[i]) {//check for NaN!
+			zeros_pos[i] = 0;
+			zeros[i]=0;
+		}
+    // Looking for real features
+	int max_pos[cnt_zeros];
+	int min_pos[cnt_zeros];
+	int cmin=0, cmax=0;
+	for (i=0; i < cnt_zeros ; i++) {
+		max_pos[i] = 0;
+		min_pos[i] = 0;
+	}
+	for (i=1; i < cnt_zeros ; i++) {
+		// Is this a local maximum? type=2
+		if (zeros[i] > zeros[i-1] && zeros[i] > zeros[i+1] && zeros_pos[i]<2500) {
+			max_pos[cmax] = i;
+			if (!cmax && zeros_pos[i] < 150)
+				cmax++;
+			if (zeros_pos[i] > 150) 
+				cmax++;
+		}
+		// Is this a local minimum? type=1
+		if (zeros[i] < zeros[i-1] && zeros[i] < zeros[i+1] && zeros_pos[i]<2500) {
+			min_pos[cmin] = i;
+			if (zeros_pos[i] > 150) 
+			  cmin++;
+		}
+	}
+	if (cmax == 1 && cmin == 1) { // one is missing
+		if (min_pos[0] < max_pos[0]) { // looks like we found transition and muon
+			max_pos[1] = max_pos[0];  // moving the maximum
+			int max = 0; // looking for the missing maximum
+			for (i=0; i <= min_pos[1]; i++) {
+				if (zeros[i] > max) {
+					max = zeros[i];
+					max_pos[0] = i;
+				}
+			}
+		}
+	}
+	int cfeat = 3;
+	double feat[cfeat];
+	feat[0] = zeros_pos[max_pos[0]]; 
+	feat[1] = zeros_pos[min_pos[0]]; 
+	feat[2] = zeros_pos[max_pos[1]]; 
+
 	/* So, we have the histogram seeds, let's fit them */
 	double tmpk=0.;
-	double feat[3];
 	// TODO erase this block, only for debbuging of fitting procedure
 	snprintf(nfi,256,"%s.pos",ifile);
 	FILE *pof;
@@ -401,12 +448,11 @@ int main (int argc, char *argv[]) {
 		exit(1);
 	}
 	//
-
-	for (i=0; i<3; i++) {
-		feat[i] = fitHisto(int(zeros_pos[i]*0.9), int(zeros_pos[i]*1.3), charge, &tmpk);
+	for (i=0; i < cfeat ; i++) {
+		feat[i] = fitHisto(int(feat[i]*0.9), int(feat[i]*1.3), charge, &tmpk);
 		// TODO erase this block, only for debbuging of fitting procedure
 		do {
-			check=fprintf(pof, "%d %.3f %.3f\n", i, zeros_pos[i], feat[i]);
+			check=fprintf(pof, "%d %.3f %s\n", i, feat[i], ifile);
 		} while (check<=0);
 	}
 	/* and done. We found the EM peak, the transition to hump, and the muon hump
@@ -416,6 +462,7 @@ int main (int argc, char *argv[]) {
 	/////// HERE ENDS THE NEW BLOCK - WAITING FOR YUNIOR TESTS ON DATA TO INCLUDE
 	/* analyze the .sol histograms */
 
+	if (false) { // TODO REMOVE THIS IF !!!
 	while(fgets(line, 16384,fi)) {
 		if (!(++lines % 1000)) cerr << lines << "\r";
 		if (line[0] == '#')   // comments? meta-data? for now, just skipping
@@ -474,6 +521,7 @@ int main (int argc, char *argv[]) {
 			}
 		}
 	}
+	} // TODO REMOVE THIS IF!!!
 	// say goodbye
 	if (icompress)
 		pclose(out);
