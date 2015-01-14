@@ -433,10 +433,10 @@ int main (int argc, char *argv[]) {
 		}
 	}
 	int cfeat = 3;
-	double feat[cfeat];
-	feat[0] = zeros_pos[max_pos[0]]; 
-	feat[1] = zeros_pos[min_pos[0]]; 
-	feat[2] = zeros_pos[max_pos[1]]; 
+	double feat[cfeat], zeros_fit[cfeat];
+	zeros_fit[0] = zeros_pos[max_pos[0]]; 
+	zeros_fit[1] = zeros_pos[min_pos[0]]; 
+	zeros_fit[2] = zeros_pos[max_pos[1]]; 
 
 	/* So, we have the histogram seeds, let's fit them */
 	double tmpk=0.;
@@ -449,10 +449,10 @@ int main (int argc, char *argv[]) {
 	}
 	//
 	for (i=0; i < cfeat ; i++) {
-		feat[i] = fitHisto(int(feat[i]*0.9), int(feat[i]*1.3), charge, &tmpk);
+		feat[i] = fitHisto(int(zeros_fit[i]*0.9), int(zeros_fit[i]*1.3), charge, &tmpk);
 		// TODO erase this block, only for debbuging of fitting procedure
 		do {
-			check=fprintf(pof, "%d %.3f %s\n", i, feat[i], ifile);
+			check=fprintf(pof, "%d %.3f %.3f %s\n", i, zeros_fit[i], feat[i], ifile);
 		} while (check<=0);
 	}
 	/* and done. We found the EM peak, the transition to hump, and the muon hump
