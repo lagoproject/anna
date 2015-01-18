@@ -31,16 +31,16 @@
 int Open(char *nfi) {
 	char tmpc[256];
 	if (strncmp(nfi+strlen(nfi)-4,".bz2",4)==0) {
-		if (iverbose)
-			fprintf(stderr,"File '%s' ending by bz2, reading it via bzip2\n",nfi);
+		fprintf(stderr,"## WARNING ## file '%s' ending by bz2, reading it via bzip2\n",nfi);
 		snprintf(tmpc,256,"bzip2 -d -c %s",nfi);
 		fi=popen(tmpc,"r");
 	}
 	else if((fi=fopen(nfi,"r")) == NULL) {
-		if (iverbose)
-			fprintf(stderr,"Can't open file '%s' - Switching to SDTIN\n",nfi);
+		fprintf(stderr,"## WARNING ## Can't open file '%s' - Switching to SDTIN\n",nfi);
 		fi=stdin;
 	}
+	if (iverbose)
+		fprintf(stderr, "## STATUS ##: Analyzing %s\n", nfi);
 	return 1;
 }
 
@@ -110,6 +110,8 @@ void Usage(char *prog) {
 	cout << "    Flags and Modifiers:"<<endl;
 	cout << "      -p                 : do the analysis of peak histograms (by default, it use only charge histograms)" << endl;
 	cout << "      -s                 : calculates the flux in counts/s instead of counts/min" << endl;
+	cout << "      -n                 : disable automatic detection of features and flux calculations (default: enabled)" << endl;
+	cout << "      -g                 : if auto is enabled, produced the .pos file to analyze goodness of automatic fit. If not, enables automatic detection" << endl;
 	cout << "      -z                 : files output are compressed" << endl;
 	cout << "      -v                 : verbose mode" << endl;
 	cout << "      -h                 : prints help and exits" << endl << endl;
@@ -159,6 +161,12 @@ int main (int argc, char *argv[]) {
 				iflux=1;
 				fluxtime=60.;
 				break;
+			case 'n':
+				iauto=0;
+				break;
+			case 'g':
+				ipos=1;
+				break;
 			case 'v':
 				iverbose=1;
 				break;
@@ -178,27 +186,32 @@ int main (int argc, char *argv[]) {
 
 	/* Some security checks */
 	if (!ifiname) {
-		cerr << endl << "\nError: Missing filename" << endl << endl;
+		cerr << endl << "\n## ERROR ##  Missing filename" << endl << endl;
 		Usage(argv[0]);
 	}
 	if (iband && irange) {
-		cerr << endl << "\nError: You can't setup band and range modes at the same time" << endl << endl;
+		cerr << endl << "\n## ERROR ## You can't setup band and range modes at the same time" << endl << endl;
 		Usage(argv[0]);
 	}
 	if (!iband && !irange) {
-		cerr << endl << "\nError: You have to select band or range modes to proceed" << endl << endl;
+		cerr << endl << "\n## ERROR ## You have to select band or range modes to proceed" << endl << endl;
 		Usage(argv[0]);
 	}
 	if (irange) {
 		if (qs >= qe) {
-			fprintf(stderr,"\nError: Qs(%d) has to be smaller than Qe(%d). Abort.\n",qs,qe);
+			fprintf(stderr,"\n## ERROR ## Qs(%d) has to be smaller than Qe(%d). Abort.\n",qs,qe);
 			Usage(argv[0]);
 		}
 	}
 	if (!channel) {
-		fprintf(stderr,"\nError: You have to select the channel to be analyzed. Abort.\n");
+		fprintf(stderr,"\n## ERROR ## You have to select the channel to be analyzed. Abort.\n");
 		Usage(argv[0]);
 	}
+	if (!iauto && ipos) {
+		fprintf(stderr,"\n## WARNING ## You selected both no automatic detection and goodness of fit. Enabling automatic features detection\n");
+		iauto = 1;
+	}
+
 
 	/* input */
 	snprintf(nfi,256,"%s",ifiname);
@@ -222,7 +235,7 @@ int main (int argc, char *argv[]) {
 		*(strchr(ifile,'1'))='2';  // change l1 by l2
 	}
 	else {
-		cerr << endl << "\nError: You should use a L1 sol file (starting with l1_)" << endl << endl;
+		cerr << endl << "\n## ERROR ## You should use a L1 sol file (starting with l1_)" << endl << endl;
 		Usage(argv[0]);
 	}
 
@@ -233,13 +246,13 @@ int main (int argc, char *argv[]) {
 		type='1';
 		end=1023;
 		if (qe > end) {
-			fprintf(stderr,"Warning: for peak analysis max. value is 1023. We will integrate up to 1023\n");
+			fprintf(stderr,"## WARNING ## for peak analysis max. value is 1023. We will integrate up to 1023\n");
 			qe=end;
 		}
 	}
 
 	if (qe > maxcharge) {
-		fprintf(stderr,"Warning: qe can't be greater than maxcharge=%d. Changing Qe to %d\n", maxcharge, maxcharge);
+		fprintf(stderr,"## WARNING ## qe can't be greater than maxcharge=%d. Changing Qe to %d\n", maxcharge, maxcharge);
 		qe=end;
 	}
 
@@ -255,17 +268,31 @@ int main (int argc, char *argv[]) {
 
 	/* open outputs and headers */
 	if (icompress) {  // open output file (.flx) via fopen or popen for compressed output files
-		snprintf(nfi,256,"bzip2 -9z > %s.flx.bz2",ifile);
+		snprintf(nfi,256,"bzip2 -9z > %s.flx.bz2", ifile);
 		if ((out = popen(nfi,"w"))==NULL) {
-			fprintf(stderr,"\nError: Failed to open compressed output file. Abort.\n");
+			fprintf(stderr,"\n## ERROR ## Failed to open compressed output file. Abort.\n");
 			exit(1);
+		}
+		if (iauto) {
+			snprintf(nfi,256,"bzip2 -9z > %s.auto.bz2", ifile);
+			if ((muo = popen(nfi,"w"))==NULL) {
+				fprintf(stderr,"\n## ERROR ## Failed to open compressed automatic flux file. Abort.\n");
+				exit(1);
+			}
 		}
 	}
 	else {
 		snprintf(nfi,256,"%s.flx",ifile);
 		if ((out = fopen(nfi,"w"))==NULL) {
-			fprintf(stderr,"\nError: Failed to open output file. Abort.\n");
+			fprintf(stderr,"\n## ERROR ## Failed to open output file. Abort.\n");
 			exit(1);
+		}
+		if (iauto) {
+			snprintf(nfi,256,"%s.auto", ifile);
+			if ((muo = fopen(nfi,"w"))==NULL) {
+				fprintf(stderr,"\n## ERROR ## Failed to open automatic flux file. Abort.\n");
+				exit(1);
+			}
 		}
 	}
 	// headers
@@ -276,19 +303,33 @@ int main (int argc, char *argv[]) {
 		fprintf(out, "# # %d bands of %d ADCq starting from %d ADCq and up to %d ADCq\n", nbands, width, start+1, end+1);
 		fprintf(out, "# # %d columns format is:\n",nbands+4);
 		if (iflux)
-			fprintf(out, "# # utc pressure temperature flux(counts/s) band001 band002 ... band%03d\n",nbands);
+			fprintf(out, "# # utc pressure temperature total_flux(counts/s) band001 band002 ... band%03d\n",nbands);
 		else
-			fprintf(out, "# # utc pressure temperature flux(counts/min) band001 band002 ... band%03d\n",nbands);
+			fprintf(out, "# # utc pressure temperature total_flux(counts/min) band001 band002 ... band%03d\n",nbands);
 	}
 	if (irange) {
 		fprintf(out, "# # the range (%d <= S <= %d) ADCq\n", qs+1, qe+1);
 		fprintf(out, "# # %d columns Format is:\n",4);
 		if (iflux)
-			fprintf(out, "# # utc pressure temperature flux(count/s)\n");
+			fprintf(out, "# # utc pressure temperature total_flux(count/s)\n");
 		else
-			fprintf(out, "# # utc pressure temperature flux(count/min)\n");
+			fprintf(out, "# # utc pressure temperature total_flux(count/min)\n");
 	}
+	if (iauto) {
+		fprintf(muo, "# # # L2 flx %s %s\n", PROJECT, VERSION);
+		fprintf(muo, "# # L2 level file (lago@lagoproject.org): flux of signals as function of time\n");
+		fprintf(muo, "# # Analysis is done by automaticaly detection of calibration histogram features\n");
+		fprintf(muo, "# # on channel %d, and integrating the flux in three bands of deposited energy.\n", channel);
+		fprintf(muo, "# # %d columns format is:\n",nbands+4);
+		if (iflux)
+			fprintf(muo, "# # utc pressure temperature total_flux(counts/s) lowEd_band muon_band highEd_band\n");
+		else
+			fprintf(muo, "# # utc pressure temperature total_flux(counts/min) lowEd_band muon_band highEd_band\n");
+	}
+
 	/* end open outputs and headers */
+	if (iverbose) 
+		fprintf(stderr, "## STATUS ##: Output files created\n");
 
 	/* and here is where fun begins... */
 	long int lines = 0;
@@ -300,171 +341,219 @@ int main (int argc, char *argv[]) {
 	int histo[maxcharge];
 	char line[16384];
 	double fluxband[nbands];
-	int currentpos=0, pos=0, i=0, is=0, j=0,k=0;
-	/// New analysis done by Y. Perez and H. Asorey
-	///// Obtain muon charge and other features from cal histogram
-	///// and use them for determining bands of interest
-	///// underway: mar dic 30 23:38:56 COT 2014
-	/* now, we have to read calibration (1h) histogram from ifile.cal, so:
+	int currentpos=0, pos=0, i=0, is=0, j=0, k=0;
+
+	/*
+	 * New analysis done by Y. Perez and H. Asorey
+	 * Obtain muon charge and other features from cal histogram
+	 * and use them for determining bands of interest
+	 * three features: 
+	 * feat[0] = EM Peak (handle with care);
+	 * feat[1] = EM-Muon transition
+	 * feat[2] = Muon hump
+	 */
+	int nfeat = 3;
+	double feat[nfeat];
+	for (i = 0; i < nfeat; i++)
+		feat[i] = 0.;
+	int nfeatband=4;
+	double featband[nfeatband];
+	for (i = 0; i < nfeatband; i++)
+		featband[i] = 0.;
+	int muon_max = 0, em_start = 0, transition = 0;
+	/* 
+	 * now, we have to read calibration (1h) histogram from ifile.cal, so:
 	 * trying to open histogram file
 	 */
-	snprintf(nfi,256,"%s.cal",ifile0);
-	if ((cal = fopen(nfi,"r"))==NULL) {
-		fprintf(stderr,"\nError: Failed to open calibration histogram file (%s). Abort.\n",nfi);
-		exit(1);
-	}
-	/* read the histogram */
-	fprintf(stderr,"Reading calibration histogram %s\n",nfi);
-	int p[3], c[3], charge[maxcharge];
-	int cline=0, ncharge=0;
-	while(fgets(line, 16384,cal)) {
-		cline++;
-		if (line[0] == '#')   // comments? meta-data? for now, just skipping
-			continue;
-		if (cline < 1028) {
-			do { // read
-				check=sscanf(line, "%d %d %d %d %d %d\n", &c[0], &c[1], &c[2], &p[0], &p[1], &p[2]);
-			} while (check != 6);
+	if (iauto) {
+		snprintf(nfi,256,"%s.cal",ifile0);
+		if ((cal = fopen(nfi,"r"))==NULL) {
+			fprintf(stderr,"\n## ERROR ## Failed to open calibration histogram file (%s). Abort.\n",nfi);
+			exit(1);
 		}
-		else {
-			do { // read
-				check=sscanf(line, "%d %d %d\n", &c[0], &c[1], &c[2]);
-			} while (check != 3);
+		/* read the histogram */
+		if (iverbose) 
+			fprintf(stderr, "## STATUS ## Reading calibration histogram %s\n",nfi);
+		int p[3], c[3], charge[maxcharge];
+		int cline=0, ncharge=0;
+		while(fgets(line, 16384,cal)) {
+			cline++;
+			if (line[0] == '#')   // comments? histogram meta-data? for now, just skipping
+				continue;
+			if (cline < 1028) {
+				do { // read
+					check=sscanf(line, "%d %d %d %d %d %d\n", &c[0], &c[1], &c[2], &p[0], &p[1], &p[2]);
+				} 
+				while (check != 6);
+			}
+			else {
+				do { // read
+					check=sscanf(line, "%d %d %d\n", &c[0], &c[1], &c[2]);
+				} 
+				while (check != 3);
+			}
+			if (ncharge>maxcharge)
+				fprintf(stderr,"## WARNING ## Too long charge histogram. It has %d lines (expected lines = %d)\n", ncharge, maxcharge);
+			charge[ncharge] = c[channel];
+			ncharge++;
 		}
-		if (ncharge>maxcharge)
-			fprintf(stderr,"Warning: Too long charge histogram. It has %d lines (expected lines = %d)\n", ncharge, maxcharge);
-		charge[ncharge] = c[channel];
-		ncharge++;
-	}
-	fclose(cal);
-	/* now, charge[] has the charge histogram for the analyzed channel
-	 * average it!, but, graded 
-	 */
-	int l1 = 200;	/* Yunior used this cut . If charge < l1, ds=6; else ds = 25
-					 * I put ds=5 as a multiple of l1
-					 */
-	int sum = 0, cnt_avg=0;
-	double chr_avg[maxcharge], pos_avg[maxcharge];
-	for (i=0; i<maxcharge; i++)
-		chr_avg[i] = pos_avg[i] = 0.;
-	int step=0;
-	/* low energy */
-	step=5;
-	for (i=0; i<l1; i+=step) {
-		sum = 0;
-		for (j=0; j<step; j++)
-			sum += charge[i+j];
-		chr_avg[cnt_avg]=sum/step;
-		pos_avg[cnt_avg]=i+step/2.;
-		cnt_avg++;
-	}
-	/* high energy */
-	step=50;
-	for (i=l1; i<maxcharge; i+=step) {
-		sum = 0;
-		for (j=0; j<step; j++)
-			sum += charge[i+j];
-		chr_avg[cnt_avg]=sum/step;
-		pos_avg[cnt_avg]=i+step/2.;
-		cnt_avg++;
-	}
-	/* Histogram are averaged. Now, derive it! */
-	cnt_avg-=2; //avoid last average point because it's usally too noise
-	double chr_der[cnt_avg];
-	for (i=0; i<cnt_avg; i++) //taking logs to magnify the effect (thanks Mauricio Suarez)
-		chr_der[i] = ((log10(chr_avg[i+1])-log10(chr_avg[i]))/(pos_avg[i+1]-pos_avg[i]));
-	// looking for 0s on histogram derivative...
-	double zeros[cnt_avg], zeros_pos[cnt_avg];
-	int cnt_zeros=0;
-	for (i=0; i<cnt_avg; i++)
-		zeros_pos[i]=zeros[i]=0.;
-	for (i=0; i<cnt_avg-1; i++) {
-		if (!sign(chr_der[i])) { // bingo... too good to be true
-			zeros_pos[cnt_zeros]=(double) i;
-			zeros[cnt_zeros]=chr_avg[i]; // charge
-			cnt_zeros++;
+		fclose(cal);
+		/* 
+		 * now, charge[] has the charge histogram for the analyzed channel
+		 * average it!, but, graded 
+		 */
+
+		/* Analysis parameters */
+		const int max_em = 200;  /* estimated value for EM peak influence */ 	
+		const int max_muon = 2500; /* max expected charge for muon */ 
+		const int low_energy_step = 5; /* average step for low energy */
+		const int high_energy_step = 50; /* average step for high energy */
+		// bands
+		// TODO need a parser for config file...
+		// in the meantime
+		const double diameter = 1580.; // nahuelito, in mm
+		const double height = 1560.; // nahuelito, in mm
+		// END TODO
+		const double muon_limit = 0.9; // TODO to avoid high energy contamination, should be < 1
+		const double muon_geometry = sqrt(1. + (diameter * diameter) / (height * height) );
+		const double em_factor = 5.;  // TODO start 1st band at em_peak*em_factor
+		const double transition_factor = 1.; // TODO end 1st band at transition_point*transition_factor
+
+		int sum = 0, cnt_avg=0;
+		double chr_avg[maxcharge], pos_avg[maxcharge];
+		for (i=0; i<maxcharge; i++)
+			chr_avg[i] = pos_avg[i] = 0.;
+		int step=0;
+		/* low energy */
+		step = low_energy_step;
+		for (i=0; i<max_em; i+=step) {
+			sum = 0;
+			for (j=0; j<step; j++)
+				sum += charge[i+j];
+			chr_avg[cnt_avg] = 1. * sum / step;
+			pos_avg[cnt_avg] = i + 1. * step / 2.;
+			cnt_avg++;
 		}
-		else if (sign(chr_der[i+1]) != sign(chr_der[i])) { // Bolzano's theorem!!
-			zeros_pos[cnt_zeros]=itpl_pos(pos_avg, chr_der,i);
-			zeros[cnt_zeros]=itpl_chr(pos_avg, chr_avg, i, zeros_pos[cnt_zeros]);
-			cnt_zeros++;
+		/* high energy */
+		step = high_energy_step;
+		for (i=max_em; i<maxcharge; i+=step) {
+			sum = 0;
+			for (j=0; j<step; j++)
+				sum += charge[i+j];
+			chr_avg[cnt_avg] = 1. * sum / step;
+			pos_avg[cnt_avg] = i + 1. * step / 2.;
+			cnt_avg++;
 		}
-	}
-	// check for NaN
-	for (i=0; i < cnt_zeros ; i++)
-		if (zeros_pos[i] != zeros_pos[i]) {//check for NaN!
-			zeros_pos[i] = 0;
-			zeros[i]=0;
+		/* Histogram are averaged. Now, derive it! */
+		cnt_avg-=2; //avoid last average point because it's usally too noise
+		double chr_der[cnt_avg];
+		for (i=0; i<cnt_avg; i++) //taking logs to magnify the effect (thanks Mauricio Suarez)
+			chr_der[i] = ((log10(chr_avg[i+1])-log10(chr_avg[i]))/(pos_avg[i+1]-pos_avg[i]));
+		// looking for 0s on histogram derivative...
+		double zeros[cnt_avg], zeros_pos[cnt_avg];
+		int cnt_zeros=0;
+		for (i=0; i<cnt_avg; i++)
+			zeros_pos[i]=zeros[i]=0.;
+		for (i=0; i<cnt_avg-1; i++) {
+			if (!sign(chr_der[i])) { // bingo... too good to be true
+				zeros_pos[cnt_zeros]=(double) i;
+				zeros[cnt_zeros]=chr_avg[i]; // charge
+				cnt_zeros++;
+			}
+			else if (sign(chr_der[i+1]) != sign(chr_der[i])) { // Bolzano's theorem!!
+				zeros_pos[cnt_zeros]=itpl_pos(pos_avg, chr_der,i);
+				zeros[cnt_zeros]=itpl_chr(pos_avg, chr_avg, i, zeros_pos[cnt_zeros]);
+				cnt_zeros++;
+			}
 		}
-    // Looking for real features
-	int max_pos[cnt_zeros];
-	int min_pos[cnt_zeros];
-	int cmin=0, cmax=0;
-	for (i=0; i < cnt_zeros ; i++) {
-		max_pos[i] = 0;
-		min_pos[i] = 0;
-	}
-	for (i=1; i < cnt_zeros ; i++) {
-		// Is this a local maximum? type=2
-		if (zeros[i] > zeros[i-1] && zeros[i] > zeros[i+1] && zeros_pos[i]<2500) {
-			max_pos[cmax] = i;
-			if (!cmax && zeros_pos[i] < 150)
-				cmax++;
-			if (zeros_pos[i] > 150) 
-				cmax++;
+		// check for NaN
+		for (i=0; i < cnt_zeros ; i++)
+			if (zeros_pos[i] != zeros_pos[i]) {//check for NaN!
+				zeros_pos[i] = 0;
+				zeros[i]=0;
+			}
+	    // Looking for real features
+		int max_pos[cnt_zeros];
+		int min_pos[cnt_zeros];
+		int cmin=0, cmax=0;
+		for (i=0; i < cnt_zeros ; i++) {
+			max_pos[i] = 0;
+			min_pos[i] = 0;
 		}
-		// Is this a local minimum? type=1
-		if (zeros[i] < zeros[i-1] && zeros[i] < zeros[i+1] && zeros_pos[i]<2500) {
-			min_pos[cmin] = i;
-			if (zeros_pos[i] > 150) 
-			  cmin++;
+		for (i=1; i < cnt_zeros ; i++) {
+			// Is this a local maximum? type=2
+			if (zeros[i] > zeros[i-1] && zeros[i] > zeros[i+1] && zeros_pos[i]<max_muon) {
+				max_pos[cmax] = i;
+				if (!cmax && zeros_pos[i] < max_em)
+					cmax++;
+				if (zeros_pos[i] > max_em) 
+					cmax++;
+			}
+			// Is this a local minimum? type=1
+			if (zeros[i] < zeros[i-1] && zeros[i] < zeros[i+1] && zeros_pos[i]<max_muon) {
+				min_pos[cmin] = i;
+				if (zeros_pos[i] > max_em) 
+				  cmin++;
+			}
 		}
-	}
-	if (cmax == 1 && cmin == 1) { // one is missing
-		if (min_pos[0] < max_pos[0]) { // looks like we found transition and muon
-			max_pos[1] = max_pos[0];  // moving the maximum
-			int max = 0; // looking for the missing maximum
-			for (i=0; i <= min_pos[1]; i++) {
-				if (zeros[i] > max) {
-					max = zeros[i];
-					max_pos[0] = i;
+		if (cmax == 1 && cmin == 1) { // one is missing
+			if (min_pos[0] < max_pos[0]) { // looks like we found transition and muon
+				max_pos[1] = max_pos[0];  // moving the maximum
+				int max = 0; // looking for the missing maximum
+				for (i=0; i <= min_pos[1]; i++) {
+					if (zeros[i] > max) {
+						max = zeros[i];
+						max_pos[0] = i;
+					}
 				}
 			}
 		}
+		/* finally, histogram seeds */
+		double zeros_fit[nfeat];
+		zeros_fit[0] = zeros_pos[max_pos[0]]; 
+		zeros_fit[1] = zeros_pos[min_pos[0]]; 
+		zeros_fit[2] = zeros_pos[max_pos[1]]; 
+		/* So, we have the histogram seeds, let's fit them */
+		double tmpk=0.;
+		if (ipos) {
+			snprintf(nfi,256,"%s.pos",ifile);
+			if ((pof = fopen(nfi,"w"))==NULL) {
+				fprintf(stderr,"\n## ERROR ## Failed to open pos file. Abort.\n");
+				exit(1);
+			}
+			fprintf(pof, "# # # L2 pos %s %s\n", PROJECT, VERSION);
+			fprintf(pof, "# # L2 level file (lago@lagoproject.org): file to check goodness of fit for automatic detection\n");
+			fprintf(pof, "# # 4 columns format is:\n");
+			fprintf(pof, "# # Feature_Index Seed_for_fit Feature analyzed_file\n");
+		}
+		for (i=0; i < nfeat ; i++) {
+			feat[i] = fitHisto(int(zeros_fit[i]*0.9), int(zeros_fit[i]*1.3), charge, &tmpk);
+			if (ipos) {
+				do {
+					check=fprintf(pof, "%d %.3f %.3f %s\n", i, zeros_fit[i], feat[i], ifile);
+				}
+				while (check<=0);
+			}
+		}
+		/* 
+		 * and done. We found the EM peak, the transition to hump, and the muon hump
+		 * of the calibration histogram, in charge units =D
+		 */
+		muon_max = int(feat[2] * muon_limit * muon_geometry + 0.5);
+		em_start = int(feat[0] * em_factor + 0.5);
+		transition = int(feat[1] * transition_factor + 0.5);
 	}
-	int cfeat = 3;
-	double feat[cfeat], zeros_fit[cfeat];
-	zeros_fit[0] = zeros_pos[max_pos[0]]; 
-	zeros_fit[1] = zeros_pos[min_pos[0]]; 
-	zeros_fit[2] = zeros_pos[max_pos[1]]; 
-
-	/* So, we have the histogram seeds, let's fit them */
-	double tmpk=0.;
-	// TODO erase this block, only for debbuging of fitting procedure
-	snprintf(nfi,256,"%s.pos",ifile);
-	FILE *pof;
-	if ((pof = fopen(nfi,"w"))==NULL) {
-		fprintf(stderr,"\nError: Failed to open pos file. Abort.\n");
-		exit(1);
-	}
-	//
-	for (i=0; i < cfeat ; i++) {
-		feat[i] = fitHisto(int(zeros_fit[i]*0.9), int(zeros_fit[i]*1.3), charge, &tmpk);
-		// TODO erase this block, only for debbuging of fitting procedure
-		do {
-			check=fprintf(pof, "%d %.3f %.3f %s\n", i, zeros_fit[i], feat[i], ifile);
-		} while (check<=0);
-	}
-	/* and done. We found the EM peak, the transition to hump, and the muon hump
-	 * of the calibration histogram, in charge units =D
+	/* 
+	 * END of new automatic analysis block by Y. Perez and H. Asorey
+	 * sat ene 17 16:28:46 COT 2015
 	 */
-
-	/////// HERE ENDS THE NEW BLOCK - WAITING FOR YUNIOR TESTS ON DATA TO INCLUDE
+	
 	/* analyze the .sol histograms */
 
-	if (false) { // TODO REMOVE THIS IF !!!
-	while(fgets(line, 16384,fi)) {
-		if (!(++lines % 1000)) cerr << lines << "\r";
+	/* reading .sol file */ 
+	while(fgets(line, 16384, fi)) {
+		if (!(++lines % 1000)) 
+			cerr << lines << "\r";
 		if (line[0] == '#')   // comments? meta-data? for now, just skipping
 			continue;
 		else if (line[0] == type) {
@@ -484,8 +573,8 @@ int main (int argc, char *argv[]) {
 					i++;
 				}
 				// done
-				flux=0.;
 				if (irange) {
+					flux=0.;
 					for (i=qs; i<=qe; i++)
 						flux+=histo[i];
 					do {
@@ -494,6 +583,7 @@ int main (int argc, char *argv[]) {
 					while (check<=0);
 				}
 				if (iband) {
+					flux=0.;
 					for (k=0; k<nbands; k++)
 						fluxband[k]=0.;
 					is = start;
@@ -512,21 +602,56 @@ int main (int argc, char *argv[]) {
 					while (check<=0);
 					for (i=0; i<nbands; i++) {
 						do {
-							check=fprintf(out, " %.2f", fluxband[i]/fluxtime);
+							check=fprintf(out, " %.2f", 1. * fluxband[i] / fluxtime);
 						}
 						while (check<=0);
 					}
 					fprintf(out, "\n");
 				}
+				if (iauto) {
+					flux=0.;
+					for (k=0; k<nfeatband; k++)
+						featband[k]=0.;
+					// EM Band, index 0, from max_em to transition
+					for (i=em_start; i<transition; i++)
+						featband[0] += histo[i];
+					// Muon Band, index 1, from transition to muon_max
+					for (i=transition; i<muon_max; i++)
+						featband[1] += histo[i];
+					// High energy band, index 2, from muon_max to maxcharge
+					for (i=muon_max; i<maxcharge; i++)
+						featband[2] += histo[i];
+					// New band, index 3, from muon to maxcharge
+					for (i=feat[2]; i<maxcharge; i++)
+						featband[3] += histo[i];
+					for (i=em_start; i<maxcharge; i++)
+						flux += histo[i];
+					do {
+						check=fprintf(muo, "%ld %.2f %.2f %.2f", utc, pressure, temperature, flux/fluxtime);
+					}
+					while (check<=0);
+					for (i=0; i<nfeatband; i++) {
+						do {
+							check=fprintf(muo, " %.2f", 1. * featband[i] / fluxtime);
+						}
+						while (check<=0);
+					}
+					fprintf(muo, "\n");
+				}
 			}
 		}
 	}
-	} // TODO REMOVE THIS IF!!!
 	// say goodbye
-	if (icompress)
+	if (icompress) {
 		pclose(out);
-	else
+		if (iauto)
+			pclose(muo);
+	}
+	else {
 		fclose(out);
-	// TODO erase this block, only for debbuging of fitting procedure
-	fclose(pof);
+		if (iauto)
+			pclose(muo);
+	}
+	if (ipos)
+		fclose(pof);
 }

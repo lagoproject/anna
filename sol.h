@@ -36,7 +36,7 @@
 using namespace std;
 
 //global variables
-int irange=0, iband=0, ipeak=0, icompress=0, iflux = 0, iverbose=0;
+int irange=0, ipos=0, iband=0, ipeak=0, icompress=0, iflux = 0, iauto=1, iverbose=0;
 int check = 0;
 const int maxcharge=4096;
 double fluxtime=1.;
@@ -49,4 +49,4 @@ double itpl_pos(double *pos_avg, double *chr_der, int i);
 double itpl_chr(double *pos_avg, double *chr_der, int i, double x);
 double fitHisto(int xi, int xf, double* h, double* r);
 void Usage(char *prog);
-FILE *fi, *out, *cal;
+FILE *fi, *out, *cal, *muo, *pof;
