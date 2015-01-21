@@ -8,9 +8,9 @@
  *  Centro Atómico Bariloche - San Carlos de Bariloche, Argentina */
 
 /*  LICENSE GPLv3
- *  This program is free software: you can redistribute it and/or modify 
- *  it under the terms of the GNU General Public License as published by 
- *  the Free Software Foundation, either version 3 of the License, or 
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
@@ -42,11 +42,11 @@ const int maxcharge=4096;
 double fluxtime=1.;
 int channel=0, start=0, width=0, qs=0, end=maxcharge, qe=maxcharge;
 char type='0'; //charge
-int Open(char *nfi); 
+int Open(char *nfi);
 inline double sign(double x);
 inline double log10(double x);
 double itpl_pos(double *pos_avg, double *chr_der, int i);
 double itpl_chr(double *pos_avg, double *chr_der, int i, double x);
 double fitHisto(int xi, int xf, double* h, double* r);
 void Usage(char *prog);
-FILE *fi, *out, *cal, *muo, *pof;
+FILE *fi, *out, *cal, *muo, *pof, *lof;

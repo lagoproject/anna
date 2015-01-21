@@ -28,7 +28,8 @@
 
 /* Functions */
 
-int Open(char *nfi) {
+int Open(char *nfi)
+{
 	char tmpc[256];
 	if (strncmp(nfi+strlen(nfi)-4,".bz2",4)==0) {
 		fprintf(stderr,"## WARNING ## file '%s' ending by bz2, reading it via bzip2\n",nfi);
@@ -39,20 +40,21 @@ int Open(char *nfi) {
 		fprintf(stderr,"## WARNING ## Can't open file '%s' - Switching to SDTIN\n",nfi);
 		fi=stdin;
 	}
-	if (iverbose)
-		fprintf(stderr, "## STATUS ##: Analyzing %s\n", nfi);
 	return 1;
 }
 
-inline double sign(double x) {
+inline double sign(double x)
+{
 	return (x < 0.0 ? -1.0 : 1.0);
 }
 
-inline double log10(double x) {
+inline double log10(double x)
+{
 	return log(x)/log(10.);
 }
 
-double itpl_pos(double *pos_avg, double *chr_der, int i) {
+double itpl_pos(double *pos_avg, double *chr_der, int i)
+{
 	double y0=chr_der[i];
 	double x0=pos_avg[i];
 	double y1=chr_der[i+1];
@@ -60,7 +62,8 @@ double itpl_pos(double *pos_avg, double *chr_der, int i) {
 	return (x0 - y0 * (x1 - x0)/(y1-y0));
 }
 
-double itpl_chr(double *pos_avg, double *chr_avg, int i, double x) {
+double itpl_chr(double *pos_avg, double *chr_avg, int i, double x)
+{
 	double y0=chr_avg[i];
 	double x0=pos_avg[i];
 	double y1=chr_avg[i+1];
@@ -68,33 +71,35 @@ double itpl_chr(double *pos_avg, double *chr_avg, int i, double x) {
 	return (y0 + (y1 - y0) * (x - x0) / (x1 - x0));
 }
 
-double fitHisto(int xi, int xf, int* h, double* r) {
-  double y1, x1, x2, x3, x4, xy, x2y, x, y, v1, v2, v;
-  v = v1 = v2 = x = y = y1 = x1 = x2 = x3 = x4 = xy = x2y = 0.0;
-  int n = 0;
-  for (int i = xi; i <= xf; i++) {
-    x = i;
-    y = (double) h[i];
-    x1 += x;
-    y1 += y;
-    xy += x * y;
-    x *= i;
-    x2 += x;
-    x2y += x * y;
-    x *= i;
-    x3 += x;
-    x *= i;
-    x4 += x;
-    n++;
-  }
-  v1 = x1 * x2 * x2y - n * x2y * x3 - x2 * x2 * xy + n * x4 * xy + x2 * x3 * y1 - x1 * x4 * y1;
-  v2 = x1 * x1 * x2y - n * x2 * x2y + n * x3 * xy + x2 * x2 * y1 - x1 * (x2 * xy + x3 * y1);
-  v = v1 / (2.0 * v2); // note v1 = -a1 and v2 = a2, so we have v = -b / 2a !
-  *r = 0.;
-  return v;
+double fitHisto(int xi, int xf, int* h, double* r)
+{
+	double y1, x1, x2, x3, x4, xy, x2y, x, y, v1, v2, v;
+	v = v1 = v2 = x = y = y1 = x1 = x2 = x3 = x4 = xy = x2y = 0.0;
+	int n = 0;
+	for (int i = xi; i <= xf; i++) {
+		x = i;
+		y = (double) h[i];
+		x1 += x;
+		y1 += y;
+		xy += x * y;
+		x *= i;
+		x2 += x;
+		x2y += x * y;
+		x *= i;
+		x3 += x;
+		x *= i;
+		x4 += x;
+		n++;
+	}
+	v1 = x1 * x2 * x2y - n * x2y * x3 - x2 * x2 * xy + n * x4 * xy + x2 * x3 * y1 - x1 * x4 * y1;
+	v2 = x1 * x1 * x2y - n * x2 * x2y + n * x3 * xy + x2 * x2 * y1 - x1 * (x2 * xy + x3 * y1);
+	v = v1 / (2.0 * v2); // note v1 = -a1 and v2 = a2, so we have v = -b / 2a !
+	*r = 0.;
+	return v;
 }
 
-void Usage(char *prog) {
+void Usage(char *prog)
+{
 	cout << endl << PROJECT << " " << VERSION << endl;
 	cout << endl << "This is the Space Weather dedicated analysis (L1 -> L2SW)" << endl<< endl;
 	cout << "  Analyze .sol output files to identify solar modulation phenomena." << endl;
@@ -118,7 +123,8 @@ void Usage(char *prog) {
 	exit(1);
 }
 
-int main (int argc, char *argv[]) {
+int main (int argc, char *argv[])
+{
 	char nfi[256]; // filename container
 	char *ifiname=NULL; // input
 
@@ -216,6 +222,8 @@ int main (int argc, char *argv[]) {
 	/* input */
 	snprintf(nfi,256,"%s",ifiname);
 	Open(nfi);
+	if (iverbose)
+		fprintf(stderr, "## STATUS ## Analyzing %s\n", nfi);
 
 	/* preparing outputs */
 	char *ifile2;
@@ -241,18 +249,30 @@ int main (int argc, char *argv[]) {
 
 	/* end of preparing outputs */
 
+	// log file
+	snprintf(nfi,256,"%s.log", ifile);
+	if ((lof = fopen(nfi,"w"))==NULL) {
+		fprintf(stderr,"\n## ERROR ## Failed to open log file. Abort.\n");
+		exit(1);
+	}
+	fprintf(lof, "# # # L2 log %s %s\n", PROJECT, VERSION);
+	fprintf(lof, "# # L2 level file (lago@lagoproject.org): fit log for the sol automatic procedure\n");
+	fprintf(lof, "## STATUS ## Analyzing %s\n", nfi);
+
 	/* preparing for work */
 	if (ipeak) {
 		type='1';
 		end=1023;
 		if (qe > end) {
 			fprintf(stderr,"## WARNING ## for peak analysis max. value is 1023. We will integrate up to 1023\n");
+			fprintf(lof,"## WARNING ## for peak analysis max. value is 1023. We will integrate up to 1023\n");
 			qe=end;
 		}
 	}
 
 	if (qe > maxcharge) {
 		fprintf(stderr,"## WARNING ## qe can't be greater than maxcharge=%d. Changing Qe to %d\n", maxcharge, maxcharge);
+		fprintf(lof,"## WARNING ## qe can't be greater than maxcharge=%d. Changing Qe to %d\n", maxcharge, maxcharge);
 		qe=end;
 	}
 
@@ -295,6 +315,7 @@ int main (int argc, char *argv[]) {
 			}
 		}
 	}
+
 	// headers
 	fprintf(out, "# # # L2 flx %s %s\n", PROJECT, VERSION);
 	fprintf(out, "# # L2 level file (lago@lagoproject.org): flux of signals as function of time\n");
@@ -319,17 +340,18 @@ int main (int argc, char *argv[]) {
 		fprintf(muo, "# # # L2 flx %s %s\n", PROJECT, VERSION);
 		fprintf(muo, "# # L2 level file (lago@lagoproject.org): flux of signals as function of time\n");
 		fprintf(muo, "# # Analysis is done by automaticaly detection of calibration histogram features\n");
-		fprintf(muo, "# # on channel %d, and integrating the flux in three bands of deposited energy.\n", channel);
-		fprintf(muo, "# # %d columns format is:\n",nbands+4);
+		fprintf(muo, "# # on channel %d, and integrating the flux in four different bands of deposited energy.\n", channel);
+		fprintf(muo, "# # 8 columns format is:\n");
 		if (iflux)
-			fprintf(muo, "# # utc pressure temperature total_flux(counts/s) lowEd_band muon_band highEd_band\n");
+			fprintf(muo, "# # utc pressure temperature total_flux(counts/s) lowEd_band muon_band highEd_band HAXB_band\n");
 		else
-			fprintf(muo, "# # utc pressure temperature total_flux(counts/min) lowEd_band muon_band highEd_band\n");
+			fprintf(muo, "# # utc pressure temperature total_flux(counts/min) lowEd_band muon_band highEd_band HAXB_band\n");
 	}
 
 	/* end open outputs and headers */
-	if (iverbose) 
-		fprintf(stderr, "## STATUS ##: Output files created\n");
+	if (iverbose)
+		fprintf(stderr, "## STATUS ## Output files created\n");
+	fprintf(lof, "## STATUS ## Output files created\n");
 
 	/* and here is where fun begins... */
 	long int lines = 0;
@@ -347,10 +369,10 @@ int main (int argc, char *argv[]) {
 	 * New analysis done by Y. Perez and H. Asorey
 	 * Obtain muon charge and other features from cal histogram
 	 * and use them for determining bands of interest
-	 * three features: 
-	 * feat[0] = EM Peak (handle with care);
-	 * feat[1] = EM-Muon transition
-	 * feat[2] = Muon hump
+	 * three features:
+	 * em = feat[0] = EM Peak (handle with care);
+	 * transition = feat[1] = EM-Muon transition
+	 * muon = feat[2] = Muon hump
 	 */
 	int nfeat = 3;
 	double feat[nfeat];
@@ -360,8 +382,11 @@ int main (int argc, char *argv[]) {
 	double featband[nfeatband];
 	for (i = 0; i < nfeatband; i++)
 		featband[i] = 0.;
-	int muon_max = 0, em_start = 0, transition = 0;
-	/* 
+	double em = 0., transition = 0., muon = 0.;
+	int muon_max = 0, em_start = 0, transition_point = 0;
+	bool go=true;
+
+	/*
 	 * now, we have to read calibration (1h) histogram from ifile.cal, so:
 	 * trying to open histogram file
 	 */
@@ -372,8 +397,9 @@ int main (int argc, char *argv[]) {
 			exit(1);
 		}
 		/* read the histogram */
-		if (iverbose) 
+		if (iverbose)
 			fprintf(stderr, "## STATUS ## Reading calibration histogram %s\n",nfi);
+		fprintf(lof, "## STATUS ## Reading calibration histogram %s\n",nfi);
 		int p[3], c[3], charge[maxcharge];
 		int cline=0, ncharge=0;
 		while(fgets(line, 16384,cal)) {
@@ -383,13 +409,13 @@ int main (int argc, char *argv[]) {
 			if (cline < 1028) {
 				do { // read
 					check=sscanf(line, "%d %d %d %d %d %d\n", &c[0], &c[1], &c[2], &p[0], &p[1], &p[2]);
-				} 
+				}
 				while (check != 6);
 			}
 			else {
 				do { // read
 					check=sscanf(line, "%d %d %d\n", &c[0], &c[1], &c[2]);
-				} 
+				}
 				while (check != 3);
 			}
 			if (ncharge>maxcharge)
@@ -398,14 +424,14 @@ int main (int argc, char *argv[]) {
 			ncharge++;
 		}
 		fclose(cal);
-		/* 
+		/*
 		 * now, charge[] has the charge histogram for the analyzed channel
-		 * average it!, but, graded 
+		 * average it!, but, graded
 		 */
 
 		/* Analysis parameters */
-		const int max_em = 200;  /* estimated value for EM peak influence */ 	
-		const int max_muon = 2500; /* max expected charge for muon */ 
+		const int max_em = 200;  /* estimated value for EM peak influence */
+		const int max_muon = 2500; /* max expected charge for muon */
 		const int low_energy_step = 5; /* average step for low energy */
 		const int high_energy_step = 50; /* average step for high energy */
 		// bands
@@ -418,7 +444,6 @@ int main (int argc, char *argv[]) {
 		const double muon_geometry = sqrt(1. + (diameter * diameter) / (height * height) );
 		const double em_factor = 5.;  // TODO start 1st band at em_peak*em_factor
 		const double transition_factor = 1.; // TODO end 1st band at transition_point*transition_factor
-
 		int sum = 0, cnt_avg=0;
 		double chr_avg[maxcharge], pos_avg[maxcharge];
 		for (i=0; i<maxcharge; i++)
@@ -472,7 +497,7 @@ int main (int argc, char *argv[]) {
 				zeros_pos[i] = 0;
 				zeros[i]=0;
 			}
-	    // Looking for real features
+		// Looking for real features
 		int max_pos[cnt_zeros];
 		int min_pos[cnt_zeros];
 		int cmin=0, cmax=0;
@@ -486,18 +511,18 @@ int main (int argc, char *argv[]) {
 				max_pos[cmax] = i;
 				if (!cmax && zeros_pos[i] < max_em)
 					cmax++;
-				if (zeros_pos[i] > max_em) 
+				if (zeros_pos[i] > max_em)
 					cmax++;
 			}
 			// Is this a local minimum? type=1
 			if (zeros[i] < zeros[i-1] && zeros[i] < zeros[i+1] && zeros_pos[i]<max_muon) {
 				min_pos[cmin] = i;
-				if (zeros_pos[i] > max_em) 
-				  cmin++;
+				if (zeros_pos[i] > max_em)
+					cmin++;
 			}
 		}
 		if (cmax == 1 && cmin == 1) { // one is missing
-			if (min_pos[0] < max_pos[0]) { // looks like we found transition and muon
+			if (min_pos[0] < max_pos[0]) { // looks like we found transition_point and muon
 				max_pos[1] = max_pos[0];  // moving the maximum
 				int max = 0; // looking for the missing maximum
 				for (i=0; i <= min_pos[1]; i++) {
@@ -510,9 +535,9 @@ int main (int argc, char *argv[]) {
 		}
 		/* finally, histogram seeds */
 		double zeros_fit[nfeat];
-		zeros_fit[0] = zeros_pos[max_pos[0]]; 
-		zeros_fit[1] = zeros_pos[min_pos[0]]; 
-		zeros_fit[2] = zeros_pos[max_pos[1]]; 
+		zeros_fit[0] = zeros_pos[max_pos[0]];
+		zeros_fit[1] = zeros_pos[min_pos[0]];
+		zeros_fit[2] = zeros_pos[max_pos[1]];
 		/* So, we have the histogram seeds, let's fit them */
 		double tmpk=0.;
 		if (ipos) {
@@ -535,24 +560,85 @@ int main (int argc, char *argv[]) {
 				while (check<=0);
 			}
 		}
-		/* 
-		 * and done. We found the EM peak, the transition to hump, and the muon hump
+		/*
+		 * and done. We found the EM peak, the transition_point to hump, and the muon hump
 		 * of the calibration histogram, in charge units =D
 		 */
-		muon_max = int(feat[2] * muon_limit * muon_geometry + 0.5);
-		em_start = int(feat[0] * em_factor + 0.5);
-		transition = int(feat[1] * transition_factor + 0.5);
+		// features
+		em = feat[0];
+		transition = feat[1];
+		muon = feat[2];
+		// band limits
+		em_start = int(em * em_factor + 0.5);
+		transition_point = int(transition * transition_factor + 0.5);
+		muon_max = int(muon * muon_limit * muon_geometry + 0.5);
+
+		/* now, we need some security checks to see if everything was fine during fits, or introduce some alerts */
+		/* of course, they should be positive */
+		if (!(em > 0. && transition > 0. && muon > 0.)) {
+			fprintf(lof, "## WARNING ## Problems during fit: Some feature(s) have negative value(s): em=%.3f, transition=%.3f, muon=%.3f\n", em, transition, muon);
+			go=false;
+		}
+		// and they need to have reasonable values
+		if (go) {
+			if (!(em < max_muon && transition < max_muon && muon < max_muon)) {
+				fprintf(lof, "## WARNING ## Problems during fit: Some feature(s) have very large value(s): em=%.3f, transition=%.3f, muon=%.3f\n", em, transition, muon);
+				go=false;
+			}
+		}
+		// and the order should be em < transition < muon (should be okay due to previous checks, but...)
+		if (go) {
+			if (em > transition) {
+				fprintf(lof, "## WARNING ## Problems during fit: em=%.3f > transition=%.3f\n", em, transition);
+				go=false;
+			}
+			if (em > muon) {
+				fprintf(lof, "## WARNING ## Problems during fit: em=%.3f > muon=%.3f\n", em, muon);
+				go=false;
+			}
+			if (transition > muon) {
+				fprintf(lof, "## WARNING ## Problems during fit: transition=%.3f > muon=%.3f\n", transition, muon);
+				go=false;
+			}
+		}
+		// and the order for band limits should be reasonables
+		if (go) {
+			if (!(em_start < transition_point && transition_point < muon_max && em_start < muon_max)) {
+				fprintf(lof, "## WARNING ## Problems with this histogram: em_start=%d, transition_point=%d, muon_max=%d\n", em_start, transition_point, muon_max);
+				go=false;
+			}
+		}
+		// if everything was fine... we can go. If not, we produce a file called L2_*.err to inform something was wrong...
+		if (go) {
+			if (iverbose)
+				fprintf(stderr, "## STATUS ## All test passed. Fit procedure exit without warnings. We can proceed with automatic band analysis.\n");
+			fprintf(lof, "## STATUS ## All test passed. Fit procedure exit without warnings. We can proceed with automatic bands analysis.\n");
+			fprintf(lof, "## STATUS ## Features found at: em=%.3f, transition=%.3f, muon=%.3f\n", em, transition, muon);
+			fprintf(lof, "## STATUS ## Bands limits: em_start=%d, transition_point=%d, muon_max=%d\n", em_start, transition_point, muon_max);
+			fprintf(muo, "# # Features found at: em=%.3f, transition=%.3f, muon=%.3f\n", em, transition, muon);
+			fprintf(muo, "# # Bands limits: em_start=%d, transition_point=%d, muon_max=%d\n", em_start, transition_point, muon_max);
+		}
+		else {
+			if (iverbose)
+				fprintf(stderr, "## STATUS ## Some test failed for this file. Please check manually.\n");
+			fprintf(lof, "## STATUS ## Some test failed for this file. Please check manually.\n");
+			snprintf(nfi,256,"touch %s.err",ifile);
+			system(nfi);
+			if (iverbose)
+				fprintf(stderr, "## STATUS ## Error indicator file %s.err created\n", ifile);
+			fprintf(lof, "## STATUS ## Error indicator file %s.err created\n", ifile);
+		}
 	}
-	/* 
+	/*
 	 * END of new automatic analysis block by Y. Perez and H. Asorey
 	 * sat ene 17 16:28:46 COT 2015
 	 */
-	
+
 	/* analyze the .sol histograms */
 
-	/* reading .sol file */ 
+	/* reading .sol file */
 	while(fgets(line, 16384, fi)) {
-		if (!(++lines % 1000)) 
+		if (!(++lines % 1000))
 			cerr << lines << "\r";
 		if (line[0] == '#')   // comments? meta-data? for now, just skipping
 			continue;
@@ -608,21 +694,21 @@ int main (int argc, char *argv[]) {
 					}
 					fprintf(out, "\n");
 				}
-				if (iauto) {
+				if (iauto && go) {
 					flux=0.;
 					for (k=0; k<nfeatband; k++)
 						featband[k]=0.;
 					// EM Band, index 0, from max_em to transition
-					for (i=em_start; i<transition; i++)
+					for (i=em_start; i<transition_point; i++)
 						featband[0] += histo[i];
 					// Muon Band, index 1, from transition to muon_max
-					for (i=transition; i<muon_max; i++)
+					for (i=transition_point; i<muon_max; i++)
 						featband[1] += histo[i];
 					// High energy band, index 2, from muon_max to maxcharge
 					for (i=muon_max; i<maxcharge; i++)
 						featband[2] += histo[i];
 					// New band, index 3, from muon to maxcharge
-					for (i=feat[2]; i<maxcharge; i++)
+					for (i=int(muon+0.5); i<maxcharge; i++)
 						featband[3] += histo[i];
 					for (i=em_start; i<maxcharge; i++)
 						flux += histo[i];
@@ -641,7 +727,16 @@ int main (int argc, char *argv[]) {
 			}
 		}
 	}
+	// tell something on the automatic analysis file (because it will be empty!)
+	if (iauto && !go) {
+		fprintf(muo, "## STATUS ## For some reason, the automatic detection of histogram features failed.\n");
+		fprintf(muo, "## STATUS ## Please check %s.log file to see the gory details\n", ifile);
+		fprintf(muo, "## STATUS ## Automatic band analysis was not performed\n");
+	}
 	// say goodbye
+	if (iverbose)
+		fprintf(stderr, "## STATUS ## Done. Closing files\n");
+	fprintf(lof, "## STATUS ## Done. Closing files\n");
 	if (icompress) {
 		pclose(out);
 		if (iauto)
@@ -654,4 +749,5 @@ int main (int argc, char *argv[]) {
 	}
 	if (ipos)
 		fclose(pof);
+	fclose(lof);
 }
