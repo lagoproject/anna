@@ -109,8 +109,10 @@ void Usage(char *prog)
 	cout << "    Options:"<<endl;
 	cout << "      -c <ch>            : channel to be analyzed [1,2,3]" << endl;
 	cout << "      -r <Qs> <Qe>       : calculates the 1-min integrated flux in the signal range Qs<S<Qe, units in ADCq" << endl;
-	cout << "                         : if not Qe is given, use default (Qe=MaxCharge="<< maxcharge << ")" << endl;
+	cout << "                         : if not Qe is given, use default (Qe=MaxCharge="<< max_charge << ")" << endl;
 	cout << "      -b <width> <start> : calculates the 1-min integrated flux for the histogram in bands of <width> ADCq" << endl;
+	cout << "      -h <det. height>   : detector height in mm (mandatory)" << endl;
+	cout << "      -d <det. diameter> : detector diameter in mm (mandatory)" << endl;
 	cout << "                           first band starts at <start> (default start=1 ADCq)" << endl;
 	cout << "    Flags and Modifiers:"<<endl;
 	cout << "      -p                 : do the analysis of peak histograms (by default, it use only charge histograms)" << endl;
@@ -119,7 +121,7 @@ void Usage(char *prog)
 	cout << "      -g                 : if auto is enabled, produced the .pos file to analyze goodness of automatic fit. If not, enables automatic detection" << endl;
 	cout << "      -z                 : files output are compressed" << endl;
 	cout << "      -v                 : verbose mode" << endl;
-	cout << "      -h                 : prints help and exits" << endl << endl;
+	cout << "      -?                 : prints help and exits" << endl << endl;
 	exit(1);
 }
 
@@ -139,6 +141,14 @@ int main (int argc, char *argv[])
 			case 'c':
 				i++;
 				channel=atoi(argv[i]); // channel to be analyzed
+				break;
+			case 'h':
+				i++;
+				height=atof(argv[i]); // height
+				break;
+			case 'd':
+				i++;
+				diameter=atof(argv[i]); // diameter
 				break;
 			case 'b':
 				iband=1;
@@ -176,7 +186,7 @@ int main (int argc, char *argv[])
 			case 'v':
 				iverbose=1;
 				break;
-			case 'h':
+			case '?':
 				Usage(argv[0]);
 				break;
 			default:
@@ -217,7 +227,10 @@ int main (int argc, char *argv[])
 		fprintf(stderr,"\n## WARNING ## You selected both no automatic detection and goodness of fit. Enabling automatic features detection\n");
 		iauto = 1;
 	}
-
+	if (iauto && (!diameter || !height)) {
+		fprintf(stderr,"\n## ERROR ## You have to provide detector height and diameter for automatic calculation.\n");
+		Usage(argv[0]);
+	}
 
 	/* input */
 	snprintf(nfi,256,"%s",ifiname);
@@ -257,7 +270,7 @@ int main (int argc, char *argv[])
 	}
 	fprintf(lof, "# # # L2 log %s %s\n", PROJECT, VERSION);
 	fprintf(lof, "# # L2 level file (lago@lagoproject.org): fit log for the sol automatic procedure\n");
-	fprintf(lof, "## STATUS ## Analyzing %s\n", nfi);
+	fprintf(lof, "## STATUS ## Analyzing %s\n", ifile);
 
 	/* preparing for work */
 	if (ipeak) {
@@ -270,9 +283,9 @@ int main (int argc, char *argv[])
 		}
 	}
 
-	if (qe > maxcharge) {
-		fprintf(stderr,"## WARNING ## qe can't be greater than maxcharge=%d. Changing Qe to %d\n", maxcharge, maxcharge);
-		fprintf(lof,"## WARNING ## qe can't be greater than maxcharge=%d. Changing Qe to %d\n", maxcharge, maxcharge);
+	if (qe > max_charge) {
+		fprintf(stderr,"## WARNING ## qe can't be greater than max_charge=%d. Changing Qe to %d\n", max_charge, max_charge);
+		fprintf(lof,"## WARNING ## qe can't be greater than max_charge=%d. Changing Qe to %d\n", max_charge, max_charge);
 		qe=end;
 	}
 
@@ -341,6 +354,7 @@ int main (int argc, char *argv[])
 		fprintf(muo, "# # L2 level file (lago@lagoproject.org): flux of signals as function of time\n");
 		fprintf(muo, "# # Analysis is done by automaticaly detection of calibration histogram features\n");
 		fprintf(muo, "# # on channel %d, and integrating the flux in four different bands of deposited energy.\n", channel);
+		fprintf(muo, "# # Detector diameter=%.1f mm. Detector height=%.1f mm\n", diameter, height);
 		fprintf(muo, "# # 8 columns format is:\n");
 		if (iflux)
 			fprintf(muo, "# # utc pressure temperature total_flux(counts/s) lowEd_band muon_band highEd_band HAXB_band\n");
@@ -360,7 +374,7 @@ int main (int argc, char *argv[])
 	long int utc;
 	double tmp;
 	double flux=0.;
-	int histo[maxcharge];
+	int histo[max_charge];
 	char line[16384];
 	double fluxband[nbands];
 	int currentpos=0, pos=0, i=0, is=0, j=0, k=0;
@@ -384,6 +398,7 @@ int main (int argc, char *argv[])
 		featband[i] = 0.;
 	double em = 0., transition = 0., muon = 0.;
 	int muon_max = 0, em_start = 0, transition_point = 0;
+	const int max_signal = 3500;
 	bool go=true;
 
 	/*
@@ -400,7 +415,7 @@ int main (int argc, char *argv[])
 		if (iverbose)
 			fprintf(stderr, "## STATUS ## Reading calibration histogram %s\n",nfi);
 		fprintf(lof, "## STATUS ## Reading calibration histogram %s\n",nfi);
-		int p[3], c[3], charge[maxcharge];
+		int p[3], c[3], charge[max_charge];
 		int cline=0, ncharge=0;
 		while(fgets(line, 16384,cal)) {
 			cline++;
@@ -418,8 +433,8 @@ int main (int argc, char *argv[])
 				}
 				while (check != 3);
 			}
-			if (ncharge>maxcharge)
-				fprintf(stderr,"## WARNING ## Too long charge histogram. It has %d lines (expected lines = %d)\n", ncharge, maxcharge);
+			if (ncharge>max_charge)
+				fprintf(stderr,"## WARNING ## Too long charge histogram. It has %d lines (expected lines = %d)\n", ncharge, max_charge);
 			charge[ncharge] = c[channel];
 			ncharge++;
 		}
@@ -435,18 +450,13 @@ int main (int argc, char *argv[])
 		const int low_energy_step = 5; /* average step for low energy */
 		const int high_energy_step = 50; /* average step for high energy */
 		// bands
-		// TODO need a parser for config file...
-		// in the meantime
-		const double diameter = 1580.; // nahuelito, in mm
-		const double height = 1560.; // nahuelito, in mm
-		// END TODO
 		const double muon_limit = 0.9; // TODO to avoid high energy contamination, should be < 1
 		const double muon_geometry = sqrt(1. + (diameter * diameter) / (height * height) );
-		const double em_factor = 5.;  // TODO start 1st band at em_peak*em_factor
+		const double em_factor = 0.6;  // TODO start of 1st band at transition * (1-em_factor)
 		const double transition_factor = 1.; // TODO end 1st band at transition_point*transition_factor
 		int sum = 0, cnt_avg=0;
-		double chr_avg[maxcharge], pos_avg[maxcharge];
-		for (i=0; i<maxcharge; i++)
+		double chr_avg[max_charge], pos_avg[max_charge];
+		for (i=0; i<max_charge; i++)
 			chr_avg[i] = pos_avg[i] = 0.;
 		int step=0;
 		/* low energy */
@@ -461,7 +471,7 @@ int main (int argc, char *argv[])
 		}
 		/* high energy */
 		step = high_energy_step;
-		for (i=max_em; i<maxcharge; i+=step) {
+		for (i=max_em; i<max_charge; i+=step) {
 			sum = 0;
 			for (j=0; j<step; j++)
 				sum += charge[i+j];
@@ -569,7 +579,8 @@ int main (int argc, char *argv[])
 		transition = feat[1];
 		muon = feat[2];
 		// band limits
-		em_start = int(em * em_factor + 0.5);
+		// em_start = int(em * em_factor + 0.5); // didn't work very well for noise histograms...
+		em_start = int(transition * (1. - em_factor) + 0.5);
 		transition_point = int(transition * transition_factor + 0.5);
 		muon_max = int(muon * muon_limit * muon_geometry + 0.5);
 
@@ -651,7 +662,7 @@ int main (int argc, char *argv[])
 				while (check != 6);
 				if (!utc)
 					continue;
-				for (k=0; k<maxcharge; k++)
+				for (k=0; k<max_charge; k++)
 					histo[k]=0.;
 				// reading histogram...
 				while (1==sscanf(line+currentpos, "%d %n", &histo[i], &pos)) {
@@ -675,7 +686,7 @@ int main (int argc, char *argv[])
 					is = start;
 					for (i=0; i<nbands; i++) {
 						for (j=0; j<width; j++) {
-							if((is+j)>=maxcharge)
+							if((is+j)>=max_charge)
 								break;
 							fluxband[i] += histo[is+j];
 						}
@@ -704,13 +715,13 @@ int main (int argc, char *argv[])
 					// Muon Band, index 1, from transition to muon_max
 					for (i=transition_point; i<muon_max; i++)
 						featband[1] += histo[i];
-					// High energy band, index 2, from muon_max to maxcharge
-					for (i=muon_max; i<maxcharge; i++)
+					// High energy band, index 2, from muon_max to max_charge
+					for (i=muon_max; i<max_charge; i++)
 						featband[2] += histo[i];
-					// New band, index 3, from muon to maxcharge
-					for (i=int(muon+0.5); i<maxcharge; i++)
+					// New band, index 3, from muon to max_charge
+					for (i=int(muon+0.5); i<max_signal; i++)
 						featband[3] += histo[i];
-					for (i=em_start; i<maxcharge; i++)
+					for (i=em_start; i<max_signal; i++)
 						flux += histo[i];
 					do {
 						check=fprintf(muo, "%ld %.2f %.2f %.2f", utc, pressure, temperature, flux/fluxtime);

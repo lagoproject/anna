@@ -38,9 +38,11 @@ using namespace std;
 //global variables
 int irange=0, ipos=0, iband=0, ipeak=0, icompress=0, iflux = 0, iauto=1, iverbose=0;
 int check = 0;
-const int maxcharge=4096;
+const int max_charge=4096;
+int avg_time = 10;
 double fluxtime=1.;
-int channel=0, start=0, width=0, qs=0, end=maxcharge, qe=maxcharge;
+double diameter = 0., height = 0.;
+int channel=0, start=0, width=0, qs=0, end=max_charge, qe=max_charge;
 char type='0'; //charge
 int Open(char *nfi);
 inline double sign(double x);
