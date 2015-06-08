@@ -82,9 +82,19 @@ double tim_ap = 0., tim_map = 0.;
 // ALL PULSE DATA ANALYSIS
 int all_trg = 0;
 
-ofstream cal, tim, mon;
-FILE *scl, *sol, *all, *rte, *flx;
+// DATA STREAMS
+ofstream cal, tim;
+FILE *scl, *sol, *all, *rte, *flx, *mon;
 
+// BASELINE ANALYSIS
+double mon_avg_bl[CHANNELS];
+double mon_av2_bl[CHANNELS];
+double mon_pulse_bl;
+double mon_avg_bl_tmp;
+double mon_dev_bl_tmp;
+int mon_bl_counts;
+
+// AUXILIARY ARRAYS
 int Peak[CHANNELS][1024];
 int Base[CHANNELS][1024];
 int Charge[CHANNELS][4096];
@@ -104,15 +114,25 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 	}
 	if (iall)
 		fprintf(all, "# %d %d %.2f %.2f\n", Data->second, Data->clockfrequency, Data->temperature, Data->pressure);
-	if (imon)
-		mon << Data->second << " " << Data->clockfrequency << " " << Data->temperature << " " << Data->pressure << " " << endl;
+	if (imon) 
+		fprintf(mon, "%d %d %.2f %.2f", Data->second, Data->clockfrequency, Data->temperature, Data->pressure);
+
+	for (int j=0; j<CHANNELS; j++)
+		mon_avg_bl[j] = mon_av2_bl[j] = 0.;
+    mon_pulse_bl=0.;
+	mon_avg_bl_tmp = 0.;
+	mon_dev_bl_tmp = 0.;
+    mon_bl_counts=0;
 
 	for (int j=0; j<CHANNELS; j++)
 		scl_flux[j] = 0;
-
 	int scl_idx = 0;
 	int scl_peak = 0;
+
+	// processing pulses
 	for (int i=0; i<NbPulses; i++) {
+
+		// only count for triggered channel
 		int trg_drop = 0;
 		if (itrg)
 			for (int j=0; j<CHANNELS; j++)
@@ -121,7 +141,8 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 						trg_drop++;
 		if (itrg && trg_drop)
 			continue;
-		for (int j=0; j<CHANNELS; j++) { //count all channels, not only those triggered
+		//count all channels, not only those triggered
+		for (int j=0; j<CHANNELS; j++) {
 			Peak[j][Pulse[i].GetPeak(j)]++;
 			Charge[j][Pulse[i].GetCharge(j,ineg[j])]++;
 			Base[j][Pulse[i].GetBase(j)]++;
@@ -175,8 +196,32 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 			tim_pc = Pulse[i].counter;
 			tim_pt = Pulse[i].clockcount;
 		} // end of tim and all sector
+
+		if (imon) { // baseline analysis for each pulse 
+			for (int j=0; j<CHANNELS; j++) {
+				mon_pulse_bl = Pulse[i].GetPulseBase(j); 
+				mon_avg_bl[j] += mon_pulse_bl;
+				mon_av2_bl[j] += mon_pulse_bl * mon_pulse_bl;
+			}
+			mon_bl_counts++;
+		}
 	} // close loop for all pulses
 
+	if (imon) { // print baselines
+		if (mon_bl_counts) {
+			for (int j=0; j<CHANNELS; j++) {
+				mon_avg_bl_tmp = mon_avg_bl[j] / mon_bl_counts;
+				mon_dev_bl_tmp = sqrt(mon_av2_bl[j] / mon_bl_counts - mon_avg_bl_tmp * mon_avg_bl_tmp);
+				fprintf(mon, " %.3f %.3f", mon_avg_bl_tmp, mon_dev_bl_tmp);
+			}
+			fprintf(mon, "\n");
+		}
+		else {
+			for (int j=0; j<CHANNELS; j++)
+				fprintf(mon, " 0.000 0.000");
+			fprintf(mon, "\n");
+		}
+	}
 	if (iflx) {
 		if (flx_time == flx_default) {
 			// averages
@@ -524,7 +569,10 @@ int main (int argc, char *argv[])
 
 	if (imon) {
 		snprintf(nfi,256,"%s.mon",ifile);
-		mon.open(nfi);
+		if ((mon = fopen(nfi,"w"))==NULL) {
+			fprintf(stderr,"Failed to open monitoring file. Abort.\n");
+			exit(1);
+		}
 	}
 	if (irte) {
 		snprintf(nfi,256,"%s.rte",ifile);
@@ -627,10 +675,10 @@ int main (int argc, char *argv[])
 	}
 
 	if (imon) {
-		mon << "# # # p 1 mon " << PROJECT << " " << VERSION << endl;
-		mon << "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)" << endl;
-		mon << "# # This is a monitoring file." << endl;
-		mon << "# # Format is second frequency temperature pressure" << endl;
+		fprintf(mon, "# # # p 1 all %s %s\n", PROJECT, VERSION);
+		fprintf(mon, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
+		fprintf(mon, "# # This is a monitoring file.\n");
+		fprintf(mon, "# # Format is second frequency temperature pressure average_baseline_chN dev_baseline_chN\n");  
 	}
 
 	if (iscl) {
@@ -762,7 +810,7 @@ int main (int argc, char *argv[])
 	if (iraw)
 		raw.close();
 	if (imon)
-		mon.close();
+		fclose(mon);
 	if (irte)
 		fclose(rte);
 	if (iflx)

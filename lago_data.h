@@ -101,6 +101,15 @@ class LagoEvent {
       return peak;
     }
 
+	double GetPulseBase(int channel) {
+		/* get first and the last two bins and return the average as 
+		 * the bl for this pulse
+		 * */
+		//double bl=trace[channel][0]+trace[channel][TRACELEN-2]+trace[channel][TRACELEN-1];
+		//return (bl/3.);
+		return trace[channel][0];
+	}
+
     int GetBase(int channel) {
       return trace[channel][0];
     }
