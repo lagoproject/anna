@@ -1,4 +1,6 @@
-#   Makefile   -- 
+#!/bin/bash
+#   lago-anna.sh 
+#	define LAGO_ANNA and modify .bashrc
 #   Copyright (C) 2012-TODAY The LAGO Project, http://lagoproject.org, lago-pi@lagoproject.org
 #   Original authors: Hernán Asorey
 #   e-mail: asoreyh@cab.cnea.gov.ar  (asoreyh@gmail.com)
@@ -22,35 +24,12 @@
 
 #   -*- coding: utf8 -*-
 #   try to preserve encoding  
-CC = g++
-
-TESTS = check-lago
-TARGETS = raw sol example
-CFLAGS = -Wall
-
-all: $(TESTS) $(TARGETS)
-
-raw: raw.cc lago_file.h lago_data.h
-	$(CC) -o $@ $< $(CFLAGS)
-
-grb: grb.cc lago_file.h lago_data.h
-	$(CC) -o $@ $< $(CFLAGS)
-
-sol: sol.cc lago_file.h lago_data.h
-	$(CC) -o $@ $< $(CFLAGS)
-
-example: example.cc lago_file.h lago_data.h
-	$(CC) -o $@ $< $(CFLAGS)
-
-.PHONY: clean
-
-clean:
-	rm -f $(TARGETS)
-
-check-lago:
-ifndef LAGO_ANNA
-$(info LAGO_ANNA is not set.)
-$(info I will define it to $PWD, and modify the .bashrc)
-$(shell $(PWD)/lago-anna.sh)
-LAGO_ANNA=$(PWD)
-endif
+export LAGO_ANNA=${PWD}
+date=$(date -u)
+echo "#
+## Changes added by the LAGO ANNA suite on $date
+#
+export LAGO_ANNA=\"${LAGO_ANNA}\"
+export PATH=\"\${LAGO_ANNA}:\$PATH\"
+" >> ${HOME}/.bashrc
+source ${HOME}/.bashrc

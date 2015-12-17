@@ -28,14 +28,12 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #ifndef LAGO_DATA_H
 #define LAGO_DATA_H
 
+#ifndef LAGO_DEFS_H
+#include "lago_defs.h"
+#endif
+
 #include <iostream>
 #include <math.h>
-
-#define CHANNELS 3
-#define TRACELEN 12
-#define BASELINE 50
-
-#define CODEVER 4
 
 class LagoGeneric {
   public:

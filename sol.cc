@@ -101,7 +101,7 @@ double fitHisto(int xi, int xf, int* h, double* r)
 
 void Usage(char *prog)
 {
-	cout << endl << PROJECT << " " << VERSION << endl;
+	cout << endl << PROJECT << " " << CODEVERSION << endl;
 	cout << endl << "This is the Space Weather dedicated analysis (L1 -> L2SW)" << endl<< endl;
 	cout << "  Analyze .sol output files to identify solar modulation phenomena." << endl;
 	cout << "  Usage: " << prog << " [flags] <filename>.sol.bz2" << endl;
@@ -269,7 +269,7 @@ int main (int argc, char *argv[])
 		fprintf(stderr,"\n## ERROR ## Failed to open log file. Abort.\n");
 		exit(1);
 	}
-	fprintf(lof, "# # # L2 log %s %s\n", PROJECT, VERSION);
+	fprintf(lof, "# # # L2 log %s %s\n", PROJECT, CODEVERSION);
 	fprintf(lof, "# # L2 level file (lago@lagoproject.org): fit log for the sol automatic procedure\n");
 	fprintf(lof, "## STATUS ## Analyzing %s\n", ifile);
 
@@ -331,7 +331,7 @@ int main (int argc, char *argv[])
 	}
 
 	// headers
-	fprintf(out, "# # # L2 flx %s %s\n", PROJECT, VERSION);
+	fprintf(out, "# # # L2 flx %s %s\n", PROJECT, CODEVERSION);
 	fprintf(out, "# # L2 level file (lago@lagoproject.org): flux of signals as function of time\n");
 	fprintf(out, "# # Analysis is done by integrating the whole channel %d charge histogram in\n", channel);
 	if (iband) {
@@ -351,7 +351,7 @@ int main (int argc, char *argv[])
 			fprintf(out, "# # utc pressure temperature total_flux(count/min)\n");
 	}
 	if (iauto) {
-		fprintf(muo, "# # # L2 flx %s %s\n", PROJECT, VERSION);
+		fprintf(muo, "# # # L2 flx %s %s\n", PROJECT, CODEVERSION);
 		fprintf(muo, "# # L2 level file (lago@lagoproject.org): flux of signals as function of time\n");
 		fprintf(muo, "# # Analysis is done by automaticaly detection of calibration histogram features\n");
 		fprintf(muo, "# # on channel %d, and integrating the flux in four different bands of deposited energy.\n", channel);
@@ -557,7 +557,7 @@ int main (int argc, char *argv[])
 				fprintf(stderr,"\n## ERROR ## Failed to open pos file. Abort.\n");
 				exit(1);
 			}
-			fprintf(pof, "# # # L2 pos %s %s\n", PROJECT, VERSION);
+			fprintf(pof, "# # # L2 pos %s %s\n", PROJECT, CODEVERSION);
 			fprintf(pof, "# # L2 level file (lago@lagoproject.org): file to check goodness of fit for automatic detection\n");
 			fprintf(pof, "# # 4 columns format is:\n");
 			fprintf(pof, "# # Feature_Index Seed_for_fit Feature analyzed_file\n");

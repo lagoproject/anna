@@ -33,14 +33,15 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <string.h>
 #include <vector>
 #include <fstream>
-using namespace std;
-
+#include "lago_defs.h"
 #include "lago_data.h"
 #include "lago_file.h"
 
+using namespace std;
+
+// Local defines
 #define MAXPULSEPERSEC 1000000
 #define MAXTIMEINVECTOR 40000
-
 #define SCL_LEVELS 4
 #define SCL_BINS 200
 #define SCL_TIME (1./SCL_BINS)
@@ -322,38 +323,55 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 
 void Usage(char *prog, int verbose=0)
 {
-	cout << endl << PROJECT << " " << VERSION << endl;
-	cout << endl << "LAGO raw data analysis (L0 -> L1)" << endl << endl;
-	cout << "Usage: " << prog << " [flags] raw_file" << endl;
-	cout << "  Options (note they are case sensitive!):"<<endl;
-	cout << "          -h: prints help and exits"<<endl;
-	cout << "          -c: produces .cal calibration file"<<endl;
-	cout << "          -s: produces .sol solar physics file"<<endl;
-	cout << "          -t <a/p>: produces .tim time difference histogram file,"  << endl  << "              filtering by a/p is a value is given (default = no)"<<endl;
-	cout << "          -r: produces .raw " << raw_limit << " second raw file copy"<<endl;
-	cout << "          -a: produces .all.bz2 compressed file containing charge," << endl << "              peak, dc and dt for all pulses"<<endl;
-	cout << "          -m: produces .mon monitoring file"<<endl;
-	cout << "          -n <time>: produces .rte scaler file with total number of pulses" << endl << "              per second. It is enabled by default when -l option is used."<< endl << "              If time (in seconds) is given, it also produces a .flx (flux)" << endl << "              file with averaged rates over <time> seconds."<<endl;
-	cout << "          -l: produces .scl scaler data file (old lago analysis)"<<endl;
-	cout << "          -g: produces .scl scaler data file (old lago analysis), with" << endl << "              absolute thresholds (should be used with -l)"<<endl;
-	cout << "          -v <channel (1-3)>: checks channel is correct (bits and baseline)"<<endl;
-	cout << endl << "  Flags and modifiers:"<<endl;
-	cout << "          -f: force analysis"<<endl;
-	cout << "          -z: produces bzip2 compressed files (solar and scaler data)"<<endl;
-	cout << "          -N <channel mask 1-7>: channels having negative undershoots"<<endl;
-	cout << "          -l <ch>";
-	for (int i=0; i<SCL_LEVELS; i++)
-		cout << " <l" << i+1 << ">";
-	cout << ": Define the " << SCL_LEVELS << " thresholds for" << endl << "              old-lago-like analysis on channel <ch>"<<endl;
-	cout << "              Default thresholds: ";
+	cout << "\t" << PROJECT << endl;
+	cout << "\tData analisys suite for the LAGO Project (L0 -> L1)" << endl; 
+	cout << endl;
+	cout << "\t(c) 2012-Today, The LAGO Project, http://lagoproject.org" << endl;
+	cout << "\t(c) 2012, LabDPR, http://labdpr.cab.cnea.gov.ar" << endl;
+	cout << endl;
+	cout << "\tThe LAGO Project, lago@lagoproject.org" << endl;
+	cout << endl;
+	cout << "\tDPR Lab. 2012" << endl;
+	cout << "\tH. Asorey, asoreyh@cab.cnea.gov.ar" << endl;
+	cout << endl;
+	cout << "Usage: " << prog << " [modifiers] <options> <values> raw_file" << endl;
+	cout << endl;
+	cout << "\tOptions and values:"<< endl;
+	cout << "\t-t <a/p> \tproduces .tim time difference histogram file,"  << endl;
+	cout << "\t         \tfiltering by a/p if a value is given (default = no)" << endl;
+	cout << "\t-n <time>\tproduces .rte scaler file with total number of pulses" << endl;
+	cout << "\t         \tper second. It is enabled by default when -l option" << endl;
+	cout << "\t         \tis used." << endl;
+	cout << "\t         \tIf time (in seconds) is given, it also produces a .flx" << endl;
+	cout << "\t         \tflux file with averaged rates over <time> seconds." << endl;
+	cout << "\t-v <chn> \tchecks if channel (1-3) is working (bits and baseline)" << endl;
+	cout << "\t-N <mask>\tindicate what channels have negative undershoots" << endl;
+	cout << "\t         \tUse channel mask 1-7." << endl;
+	cout << "\t-u <tr i>\tImpose an offline trigger level for each channel" << endl;
+	cout << "\t         \tDefault value: " << trg_default << " ADC)" << endl;
+	cout << "\t-l <ch> <t_i>\tdefines the " << SCL_LEVELS << " thresholds t_i for the old" << endl;
+	cout << "\t         \tlago-like scalers analysis on channel <ch>."<< endl;
+	cout << "\t         \tFor example: -l 1 5 15 30 50, defines subchannels" << endl;
+	cout << "\t         \tthresholds for ch 1" << endl;
+	cout << "\t         \tDefault thresholds (using -l <ch>): ";
 	for (int i=0; i<SCL_LEVELS; i++)
 		cout << scl_default[i] << " ";
 	cout << endl;
-	cout << "          -u <trigger ch1> <trigger ch2> <trigger ch3>: impose an offline" << endl << "              trigger level for each channel (default value: " << trg_default << " ADC)" << endl;
 	cout << endl;
-	if (verbose) {
-		// verbose help
-	}
+	cout << "\tModifiers (note they are case sensitive!):" << endl;
+	cout << "\t-h\tprints help and exits" << endl;
+	cout << "\t-c\tproduces the .cal calibration file" << endl;
+	cout << "\t-s\tproduces the .sol solar physics file" << endl;
+	cout << "\t-r\tproduces the .raw " << raw_limit << " second raw file copy" << endl;
+	cout << "\t-m\tproduces the .mon monitoring file" << endl;
+	cout << "\t-f\tforce analysis for older data versions than " << CODEVERSION << endl;
+	cout << "\t-z\tproduces bzip2 compressed files (solar and scaler data)"<<endl;
+	cout << "\t-l\tproduces .scl scaler data file (old lago analysis)"<<endl;
+	cout << "\t-g\tproduces .scl scaler data file (old lago analysis), but" << endl;
+	cout << "\t  \tabsolute thresholds (should be used with -l)" << endl;
+	cout << "\t-a\tproduces the .all.bz2 compressed file containing charge," << endl;
+	cout << "\t  \tpeak, dc and dt, rise time and fall time for all pulses" << endl;
+	cout << endl;
 	exit(1);
 }
 
@@ -520,7 +538,7 @@ int main (int argc, char *argv[])
 	if (strrchr(ifile2,'/')!=NULL) {
 		ifile2=strrchr(ifile2,'/')+1;
 	}
-	snprintf(ifile, 256,"l1_%s_%s",VERSION,ifile2);
+	snprintf(ifile, 256,"l1_%s_%s",CODEVERSION,ifile2);
 	if (strrchr(ifile,'.')!=NULL) {
 		if (strncmp(strrchr(ifile,'.'),".bz2",4)==0) { // remove .bz2 if present
 			*(strrchr(ifile,'.'))='\0';
@@ -625,7 +643,7 @@ int main (int argc, char *argv[])
 	}
 
 	if (ical) {
-		cal << "# # # p 1 cal " << PROJECT << " " << VERSION << endl;
+		cal << "# # # p 1 cal " << PROJECT << " " << CODEVERSION << endl;
 		cal << "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)" << endl;
 		cal << "# # This is a file containing the charge and peak calibration histograms" << endl;
 		cal << "# # Format is ch1 ch2 ch3 pk1 pk2 pk3" << endl;
@@ -634,7 +652,7 @@ int main (int argc, char *argv[])
 	}
 
 	if (itim) {
-		tim << "# # # p 1 tim " << PROJECT << " " << VERSION << endl;
+		tim << "# # # p 1 tim " << PROJECT << " " << CODEVERSION << endl;
 		tim << "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)" << endl;
 		tim << "# # This is a file containing the time difference histogram" << endl;
 		tim << "# # Format is #time_difference(ns) #count for each channel" << endl;
@@ -645,13 +663,13 @@ int main (int argc, char *argv[])
 	}
 
 	if (iraw) {
-		raw << "# # # p 1 raw " << PROJECT << " " << VERSION << endl;
+		raw << "# # # p 1 raw " << PROJECT << " " << CODEVERSION << endl;
 		raw << "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)" << endl;
 		raw << "# # This is a RAW file containing the first 10 seconds of data" << endl;
 	}
 
 	if (isol) {
-		fprintf(sol, "# # # p 1 sol %s %s\n", PROJECT, VERSION);
+		fprintf(sol, "# # # p 1 sol %s %s\n", PROJECT, CODEVERSION);
 		fprintf(sol, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
 		fprintf(sol, "# # This is a Solar data file.\n");
 		fprintf(sol, "# # These are one minute charge and peak histograms, with monitoring information\n");
@@ -664,7 +682,7 @@ int main (int argc, char *argv[])
 	}
 
 	if (iall) {
-		fprintf(all, "# # # p 1 all %s %s\n", PROJECT, VERSION);
+		fprintf(all, "# # # p 1 all %s %s\n", PROJECT, CODEVERSION);
 		fprintf(all, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
 		fprintf(all, "# # This is a file containing all processed data\n");
 		fprintf(all, "# # Format is # second frequency temperature pressure\n");
@@ -675,14 +693,14 @@ int main (int argc, char *argv[])
 	}
 
 	if (imon) {
-		fprintf(mon, "# # # p 1 all %s %s\n", PROJECT, VERSION);
+		fprintf(mon, "# # # p 1 all %s %s\n", PROJECT, CODEVERSION);
 		fprintf(mon, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
 		fprintf(mon, "# # This is a monitoring file.\n");
 		fprintf(mon, "# # Format is second frequency temperature pressure average_baseline_chN dev_baseline_chN\n");  
 	}
 
 	if (iscl) {
-		fprintf(scl, "# # # p 1 scl %s %s\n", PROJECT, VERSION);
+		fprintf(scl, "# # # p 1 scl %s %s\n", PROJECT, CODEVERSION);
 		fprintf(scl, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
 		fprintf(scl, "# # This is the old-lago-like scaler file.\n");
 		fprintf(scl, "# # Format is:\n");
@@ -704,14 +722,14 @@ int main (int argc, char *argv[])
 			fprintf(scl, "# # An offline trigger of %d %d %d ADC above baseline has been used for each channel respectively.\n", trg_level[0], trg_level[1], trg_level[2]);
 	}
 	if (irte) {
-		fprintf(rte, "# # # p 1 rte %s %s\n", PROJECT, VERSION);
+		fprintf(rte, "# # # p 1 rte %s %s\n", PROJECT, CODEVERSION);
 		fprintf(rte, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
 		fprintf(rte, "# # This is the rate (pulse per second) file.\n");
 		fprintf(rte, "# # Format is:\n");
 		fprintf(rte, "# # second temperature pressure Total_Rate Rate_per_channel:_(%d)_columns\n",CHANNELS);
 	}
 	if (iflx) {
-		fprintf(flx, "# # # p 1 flx %s %s\n", PROJECT, VERSION);
+		fprintf(flx, "# # # p 1 flx %s %s\n", PROJECT, CODEVERSION);
 		fprintf(flx, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
 		fprintf(flx, "# # This is the flux file.\n");
 		fprintf(flx, "# # Format is:\n");

@@ -29,8 +29,14 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #ifndef LAGO_FILE_H
 #define LAGO_FILE_H
 
+#ifndef LAGO_DEFS_H
 #include "lago_defs.h"
+#endif
+
+#ifndef LAGO_DATA_H
 #include "lago_data.h"
+#endif
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -101,8 +107,8 @@ class LagoFile {
             case 'v':  // version check
               double ver;
               sscanf(line, "# v %lf\n", &ver);
-              if (ver > 1 && ver != CODEVER) {
-                std::cerr << "This code is prepared to work with LAGO raw data version " << CODEVER << std::endl;
+              if (ver > 1 && ver != DATAVERSION) {
+                std::cerr << "This code is prepared to work with LAGO raw data version " << DATAVERSION << std::endl;
                 std::cerr << "Raw data was obtained using LAGO version " << ver << std::endl;
                 if (!force) {
                   std::cerr << "See you later." << std::endl;
