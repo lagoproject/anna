@@ -324,7 +324,7 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 void Usage(char *prog, int verbose=0)
 {
 	cout << "\t" << PROJECT << endl;
-	cout << "\tData analisys suite for the LAGO Project (L0 -> L1)" << endl; 
+	cout << "\tData analysis suite for the LAGO Project (L0 -> L1)" << endl; 
 	cout << endl;
 	cout << "\t(c) 2012-Today, The LAGO Project, http://lagoproject.org" << endl;
 	cout << "\t(c) 2012, LabDPR, http://labdpr.cab.cnea.gov.ar" << endl;
