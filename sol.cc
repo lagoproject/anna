@@ -101,28 +101,40 @@ double fitHisto(int xi, int xf, int* h, double* r)
 
 void Usage(char *prog)
 {
-	cout << endl << PROJECT << " " << CODEVERSION << endl;
-	cout << endl << "This is the Space Weather dedicated analysis (L1 -> L2SW)" << endl<< endl;
-	cout << "  Analyze .sol output files to identify solar modulation phenomena." << endl;
-	cout << "  Usage: " << prog << " [flags] <filename>.sol.bz2" << endl;
-	cout << "    If 'file.sol.bz2' does not exits, switch to STDIN and use <filename> as" << endl;
-	cout << "    basename for output file." << endl;
-	cout << "    Options:"<<endl;
-	cout << "      -c <ch>            : channel to be analyzed [1,2,3]" << endl;
-	cout << "      -r <Qs> <Qe>       : calculates the 1-min integrated flux in the signal range Qs<S<Qe, units in ADCq" << endl;
-	cout << "                         : if not Qe is given, use default (Qe=MaxCharge="<< max_charge << ")" << endl;
-	cout << "      -b <width> <start> : calculates the 1-min integrated flux for the histogram in bands of <width> ADCq" << endl;
-	cout << "      -h <det. height>   : detector height in mm (mandatory)" << endl;
-	cout << "      -d <det. diameter> : detector diameter in mm (mandatory)" << endl;
-	cout << "                           first band starts at <start> (default start=1 ADCq)" << endl;
-	cout << "    Flags and Modifiers:"<<endl;
-	cout << "      -p                 : do the analysis of peak histograms (by default, it use only charge histograms)" << endl;
-	cout << "      -s                 : calculates the flux in counts/s instead of counts/min" << endl;
-	cout << "      -n                 : disable automatic detection of features and flux calculations (default: enabled)" << endl;
-	cout << "      -g                 : if auto is enabled, produced the .pos file to analyze goodness of automatic fit. If not, enables automatic detection" << endl;
-	cout << "      -z                 : files output are compressed" << endl;
-	cout << "      -v                 : verbose mode" << endl;
-	cout << "      -?                 : prints help and exits" << endl << endl;
+	cout << "\t" << PROJECT << " " << CODEVERSION << endl;
+	cout << endl;
+    cout << "\t(c) 2012-Today, The LAGO Project, http://lagoproject.org" << endl;
+    cout << "\t(c) 2012, LabDPR, http://labdpr.cab.cnea.gov.ar" << endl;
+    cout << endl;
+    cout << "\tThe LAGO Project, lago@lagoproject.org" << endl;
+    cout << endl;
+    cout << "\tHalley (UIS) and ULA 2014" << endl;
+    cout << "\tY. Perez and H. Asorey, asoreyh@cab.cnea.gov.ar" << endl;
+    cout << endl;
+	cout << "\tSpace Weather dedicated analysis (L1 -> L2SW)" << endl;
+	cout << "\tAnalyze .sol output files to identify solar modulation phenomena." << endl;
+	cout << "\tUsage: " << prog << " [flags] <filename>.sol.bz2" << endl;
+    cout << endl;
+	cout << "\tIf 'file.sol.bz2' does not exits, switch to STDIN and use <filename> as" << endl;
+	cout << "\tbasename for output file." << endl;
+    cout << endl;
+	cout << "\tOptions:"<<endl;
+	cout << "\t-c <ch>      \tchannel to be analyzed [1,2,3]" << endl;
+	cout << "\t-r <Qs> <Qe> \tcalculates the 1-min integrated flux in the signal range Qs<S<Qe, "<<endl;
+	cout << "\t             \tin ADCq. If not Qe is given, use default (Qe=MaxCharge="<< max_charge << ")" << endl;
+	cout << "\t-b <w> <s>   \tcalculates 1-min flux in bands of width <w> ADCq, starting at <s>" << endl;
+	cout << "\t-h <height>  \tdetector height in mm (mandatory)" << endl;
+	cout << "\t-d <diameter>\tdetector diameter in mm (mandatory)" << endl;
+    cout << endl;
+	cout << "\tFlags and Modifiers:"<<endl;
+	cout << "\t-p\tdo the analysis of peak histograms (only charge histograms by default)" << endl;
+	cout << "\t-s\tcalculates the flux in counts/s instead of counts/min" << endl;
+	cout << "\t-n\tdisable automatic detection of features and flux calculations" << endl;
+	cout << "\t-g\tif auto is enabled, produce the .pos file to analyze goodness of automatic fit." << endl; 
+	cout << "\t  \tIf not, it enables automatic detection" << endl;
+	cout << "\t-z\toutput files are compressed using bz2" << endl;
+	cout << "\t-v\tverbose mode" << endl;
+	cout << "\t-?\tprints this help and exits" << endl << endl;
 	exit(1);
 }
 

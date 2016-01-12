@@ -25,7 +25,7 @@
 CC = g++
 
 TESTS = check-lago
-TARGETS = raw sol example
+TARGETS = raw sol example dump
 CFLAGS = -Wall
 
 all: $(TESTS) $(TARGETS)
@@ -40,6 +40,9 @@ sol: sol.cc lago_file.h lago_data.h
 	$(CC) -o $@ $< $(CFLAGS)
 
 example: example.cc lago_file.h lago_data.h
+	$(CC) -o $@ $< $(CFLAGS)
+
+dump: dump.cc lago_file.h lago_data.h
 	$(CC) -o $@ $< $(CFLAGS)
 
 .PHONY: clean

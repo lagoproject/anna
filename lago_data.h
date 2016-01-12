@@ -110,7 +110,7 @@ class LagoEvent {
 	}
 
     int GetBase(int channel) {
-      return trace[channel][0];
+      return GetPulseBase(channel);
     }
 
     int GetValAtTrigger(int channel) {
@@ -123,8 +123,10 @@ class LagoEvent {
         // negative pulse for Boyita and other detectors where pulse
         // can become negative due to the shaper response
         for (int i=0;i<currentbinfilled;i++) 
-          if (trace[channel][i]>BASELINE) charge+=trace[channel][i]-BASELINE;
-          else charge+=BASELINE-trace[channel][i];
+          if (trace[channel][i]>BASELINE) 
+			  charge+=trace[channel][i]-BASELINE;
+          else 
+			  charge+=BASELINE-trace[channel][i];
       } else {
         for (int i=0;i<currentbinfilled;i++) 
           charge+=trace[channel][i];
@@ -138,9 +140,29 @@ class LagoEvent {
     }
 
     void dump() {
-      std::cout << "# " << trigger << " " << counter << " " << clockcount << std::endl;
-      for (int i=0;i<currentbinfilled;i++) 
-        std::cout << trace[0][i] << " " << trace[1][i] << " " << trace[2][i] << std::endl;
+      std::cout 
+		  << "# trg: " << trigger << " cnt: " << counter << " clk: " << clockcount << " " 
+		  << std::endl;
+	  for (int i=0; i<currentbinfilled; i++) {
+		  std::cout << "# " << i+1 << ": ";
+		  for (int j=0; j<CHANNELS; j++) {
+			  std::cout << trace[j][i] << " ";
+		  }
+		  std::cout << std::endl;
+	  }
+	  std::cout << "# bl: ";
+	  for (int j=0; j<CHANNELS; j++)
+			  std::cout << GetPulseBase(j) << " "; 
+	  std::cout << std::endl;
+	  std::cout << "# pk: ";
+	  for (int j=0; j<CHANNELS; j++)
+			  std::cout << GetPeak(j) << " "; 
+	  std::cout << std::endl;
+	  std::cout << "# cg: ";
+	  for (int j=0; j<CHANNELS; j++)
+			  std::cout << GetCharge(j) << " "; 
+	  std::cout << std::endl;
+	  std::cout << std::endl;
     }
 };
 

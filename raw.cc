@@ -83,6 +83,9 @@ double tim_ap = 0., tim_map = 0.;
 // ALL PULSE DATA ANALYSIS
 int all_trg = 0;
 
+// USE ONLY PULSES TRIGGERED AT CHANNEL FOR CALIBRATION HISTOGRAMS
+int icaltrg = 0; // No! by default
+int chargetmp = 0, peaktmp = 0;
 // DATA STREAMS
 ofstream cal, tim;
 FILE *scl, *sol, *all, *rte, *flx, *mon;
@@ -132,8 +135,7 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 
 	// processing pulses
 	for (int i=0; i<NbPulses; i++) {
-
-		// only count for triggered channel
+		// impossing external trigger
 		int trg_drop = 0;
 		if (itrg)
 			for (int j=0; j<CHANNELS; j++)
@@ -142,15 +144,24 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 						trg_drop++;
 		if (itrg && trg_drop)
 			continue;
-		//count all channels, not only those triggered
+		//we can use this pulse 
 		for (int j=0; j<CHANNELS; j++) {
-			Peak[j][Pulse[i].GetPeak(j)]++;
-			Charge[j][Pulse[i].GetCharge(j,ineg[j])]++;
+			peaktmp = Pulse[i].GetPeak(j);
+			chargetmp = Pulse[i].GetCharge(j,ineg[j]);
+			if (icaltrg) {
+				if (Pulse[i].IsTriggered(j)) {
+					Peak[j][peaktmp]++;
+					Charge[j][chargetmp]++;
+				}
+			} else {
+				Peak[j][peaktmp]++;
+				Charge[j][chargetmp]++;
+			}
 			Base[j][Pulse[i].GetBase(j)]++;
 			scl_flux[j]++;
 			if (iscl) {
 				scl_idx = (int)(Pulse[i].clockcount / SCL_CLOCK);
-				scl_peak = Pulse[i].GetPeak(j);
+				scl_peak = peaktmp;
 				if (isclg)
 					scl_peak += BASELINE;
 				for (int k=0; k<SCL_LEVELS; k++) {
@@ -323,8 +334,7 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 
 void Usage(char *prog, int verbose=0)
 {
-	cout << "\t" << PROJECT << endl;
-	cout << "\tData analysis suite for the LAGO Project (L0 -> L1)" << endl; 
+	cout << "\t" << PROJECT << " " << CODEVERSION << endl;
 	cout << endl;
 	cout << "\t(c) 2012-Today, The LAGO Project, http://lagoproject.org" << endl;
 	cout << "\t(c) 2012, LabDPR, http://labdpr.cab.cnea.gov.ar" << endl;
@@ -332,9 +342,13 @@ void Usage(char *prog, int verbose=0)
 	cout << "\tThe LAGO Project, lago@lagoproject.org" << endl;
 	cout << endl;
 	cout << "\tDPR Lab. 2012" << endl;
-	cout << "\tH. Asorey, asoreyh@cab.cnea.gov.ar" << endl;
+	cout << "\tX. Bertou and H. Asorey, asoreyh@cab.cnea.gov.ar" << endl;
 	cout << endl;
-	cout << "Usage: " << prog << " [modifiers] <options> <values> raw_file" << endl;
+	cout << "\tRaw data analysis suite for the LAGO Project (L0 -> L1)" << endl; 
+	cout << "Usage: " << prog << " [modifiers] <options> <values> <raw_file>[.dat[.bz2]]" << endl;
+	cout << endl;
+	cout << "\tIf 'raw_file' does not exist, switch to STDIN and use <raw_file> as" << endl;
+    cout << "\tbasename for the output files." << endl;
 	cout << endl;
 	cout << "\tOptions and values:"<< endl;
 	cout << "\t-t <a/p> \tproduces .tim time difference histogram file,"  << endl;
@@ -366,11 +380,14 @@ void Usage(char *prog, int verbose=0)
 	cout << "\t-m\tproduces the .mon monitoring file" << endl;
 	cout << "\t-f\tforce analysis for older data versions than " << CODEVERSION << endl;
 	cout << "\t-z\tproduces bzip2 compressed files (solar and scaler data)"<<endl;
-	cout << "\t-l\tproduces .scl scaler data file (old lago analysis)"<<endl;
 	cout << "\t-g\tproduces .scl scaler data file (old lago analysis), but" << endl;
 	cout << "\t  \tabsolute thresholds (should be used with -l)" << endl;
 	cout << "\t-a\tproduces the .all.bz2 compressed file containing charge," << endl;
 	cout << "\t  \tpeak, dc and dt, rise time and fall time for all pulses" << endl;
+	cout << "\t-i\tOnly include pulses that trigger each channel to fill" << endl; 
+	cout << "\t  \tthe calibration histograms of each channel (by default," << endl; 
+	cout << "\t  \tall pulses are included." << endl;
+    cout << "\t-?\tprints this help and exits" << endl << endl;
 	cout << endl;
 	exit(1);
 }
@@ -465,6 +482,9 @@ int main (int argc, char *argv[])
 				break;
 			case 'g':
 				isclg=1;
+				break;
+			case 'i':
+				icaltrg=1;
 				break;
 			case 'l':
 				iscl=1;
