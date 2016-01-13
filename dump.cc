@@ -58,12 +58,17 @@ int main (int argc, char **argv) {
   //
   // File reading and processing
   //
+  double rt=0., ft=0., tt=0.;
   cerr << "Reading file" << endl;
   while(NbPulses!=-1) {
     NbPulses=Input.ReadOneSecond(&Data,Pulse,MAXPULSEPERSEC);
-	for (int j=CHANNELS-1; j>=0; j--)
-		cout << Pulse[0].IsTriggered(j) << " ";
-	cout << endl;
+	for (int i=0; i<NbPulses; i++) {
+		rt = Pulse[i].GetRiseTime(2);
+		ft = Pulse[i].GetFallTime(2);
+		tt = Pulse[i].GetFullTime(2);
+		if (rt>0 && ft>0)
+			cout << rt << " " << ft << " " << tt << endl;
+	}
   }
   return 0;
 }

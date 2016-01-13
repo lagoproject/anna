@@ -139,7 +139,55 @@ class LagoEvent {
       return charge;
     }
 
-    void dump() {
+	double GetTfraction(int channel, int fraction) {
+		if (fraction < 10 || fraction > 100)
+			return -1;
+		double charge = (double) GetCharge(channel);
+		if (!charge)
+			return -2;
+		int i=0;
+		double s = 0.;
+		double dy = 0.;
+		double x = 0.;
+		double limit = fraction / 100.;
+		for (i=0; i<currentbinfilled; i++) {
+			dy = 1.0 * (trace[channel][i] - BASELINE) / charge;
+			s += dy;
+			if (s >= limit)
+				break;
+		}
+		if (!i)
+			return -3;
+		if (!dy)// no changes from previous bin? should not happen thanks to the equal sign in the comparisson, but just in case
+			return ((i-1.)*BIN); // return previous bin
+		x = (1.0 * i - ((s - limit) / dy)) * BIN;
+		return x;
+	}
+
+	double GetCharTime(int channel, int up, int low) {
+		if (up < low)
+			return -1; // stupid user
+		double Tu=GetTfraction(channel,up);
+		double Tl=GetTfraction(channel,low);
+		if (Tu >= 0 && Tl >= 0) 
+			return (Tu-Tl);
+		else
+			return -1;
+	}
+	
+	double GetRiseTime (int channel) {
+		return GetCharTime(channel,50,10);
+	}
+	
+	double GetFallTime (int channel) {
+		return GetCharTime(channel,90,50);
+	}
+	
+	double GetFullTime (int channel) {
+		return GetCharTime(channel,90,10);
+	}
+    
+	void dump() {
       std::cout 
 		  << "# trg: " << trigger << " cnt: " << counter << " clk: " << clockcount << " " 
 		  << std::endl;
