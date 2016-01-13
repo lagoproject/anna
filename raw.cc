@@ -669,6 +669,8 @@ int main (int argc, char *argv[])
 		cal << "# # Format is ch1 ch2 ch3 pk1 pk2 pk3" << endl;
 		if (itrg)
 			cal << "# # An offline trigger of " << trg_level[0] << " " << trg_level[1] << " " << trg_level[2] << " ADC above baseline has been used for each channel respectively." << endl;
+		if (icaltrg)
+			cal << "# # For each channel we only used triggered pulses at this particular channel (-i option)" << endl;
 	}
 
 	if (itim) {
