@@ -202,7 +202,11 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 			if (iall) {
 				fprintf(all, "%d %d %d", tim_dt * 25, tim_dc, Pulse[i].trigger);
 				for (int j=0; j<CHANNELS; j++)
-					if (Pulse[i].IsTriggered(j)) fprintf(all, " %d %d", Pulse[i].GetCharge(j,ineg[j]), Pulse[i].GetPeak(j));
+					if (Pulse[i].IsTriggered(j)) 
+						fprintf(all, " %d %d", Pulse[i].GetCharge(j,ineg[j]), Pulse[i].GetPeak(j));
+				for (int j=0; j<CHANNELS; j++)
+					if (Pulse[i].IsTriggered(j)) 
+						fprintf(all, " %.2f %.2f", Pulse[i].GetRiseTime(j), Pulse[i].GetFallTime(j));
 				fprintf(all, "\n");
 			}
 			tim_pc = Pulse[i].counter;
@@ -708,7 +712,7 @@ int main (int argc, char *argv[])
 		fprintf(all, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
 		fprintf(all, "# # This is a file containing all processed data\n");
 		fprintf(all, "# # Format is # second frequency temperature pressure\n");
-		fprintf(all, "# #   time_to_prev_pulse counts_to_prev_pulse channels_triggered_mask ch_ch1 pk_ch1 ch_ch2 pk_ch2 ch_ch3 pk_ch3 (channel <i> is printed only if it triggered)\n");
+		fprintf(all, "# #   time_to_prev_pulse counts_to_prev_pulse channels_triggered_mask ch_ch1 pk_ch1 ch_ch2 pk_ch2 ch_ch3 pk_ch3 risetime_ch1 falltime_ch1 risetime_ch2 falltime_ch2 risetime_ch3 falltime_ch3 (channel <i> is printed only if it triggered)\n");
 		fprintf(all, "# # note: time_to_prev_pulse is in clock cycle, and reset to 0 every second\n");
 		if (itrg)
 			fprintf(all, "# # An offline trigger of %d %d %d ADC above baseline has been used for each channel respectively.\n", trg_level[0], trg_level[1], trg_level[2]);
