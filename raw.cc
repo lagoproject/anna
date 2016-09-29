@@ -50,7 +50,7 @@ using namespace std;
 // action flags. Should be improved with a class
 int ical=0, itim=0, isol=0, iall=0, imon=0, force=0, ivalid=0;
 int izip=0, iscl=0, isclg=0, itrg=0, irte=0, iflx=0, ineg[3]= {0,0,0};
-int isat=0, iqtr=0; 
+int isat=0, iqtr=0, imuo=0, imup=1; 
 
 // OLD SCALER ANALYSIS
 // levels should be given above baseline or threshold (-lt modifier).
@@ -113,9 +113,13 @@ int Base[CHANNELS][ADCMAX];
 int Charge[CHANNELS][CHRGMAX];
 int ECharge[CHANNELS][CHRGMAX];
 int Time[CHANNELS][MAXTIMEINVECTOR];
-
 int Peak_minute[CHANNELS][ADCMAX];
 int Charge_minute[CHANNELS][CHRGMAX];
+
+// new muon optimization search filter
+int MCharge[CHANNELS][CHRGMAX];
+int MPeak[CHANNELS][ADCMAX];
+int ppeak[CHANNELS], pcharge[CHANNELS];
 
 void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 	if (((Data->second)%36)==0)
@@ -141,6 +145,9 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 		scl_flux[j] = 0;
 	int scl_idx = 0;
 	int scl_peak = 0;
+	
+	for (int j=0; j<CHANNELS; j++)
+		ppeak[j] = pcharge[j] = 0;
 
 	// processing pulses
 	for (int i=0; i<NbPulses; i++) {
@@ -166,7 +173,7 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 		if (itrg && trg_drop)
 			continue;
 
-		// impose an additional trigger using values for bin #3
+		// impose an additional trigger using values for bin #4
 		int qtr_drop = 0;
 		if (iqtr) 
 			for (int j=0; j<CHANNELS; j++)
@@ -189,8 +196,40 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 				Peak[j][peaktmp]++;
 				Charge[j][chargetmp]++;
 			}
+			if (imuo) {
+				if (icaltrg) {
+					if (Pulse[i].IsTriggered(j)) {
+						if (imup) {
+							if (peaktmp >= ppeak[j] ) {
+								MPeak[j][peaktmp]++;
+								MCharge[j][chargetmp]++;
+							}
+						} else {
+							if (chargetmp >= pcharge[j] ) {
+								MPeak[j][peaktmp]++;
+								MCharge[j][chargetmp]++;
+							}
+						}
+					}
+				}
+				else {
+					if (imup) {
+						if (peaktmp >= ppeak[j]) {
+							MPeak[j][peaktmp]++;
+							MCharge[j][chargetmp]++;
+						}
+					} else {
+						if (chargetmp >= pcharge[j]) {
+							MPeak[j][peaktmp]++;
+							MCharge[j][chargetmp]++;
+						}
+					}
+				}
+			}
+
 			Base[j][Pulse[i].GetBase(j)]++;
 			scl_flux[j]++;
+			
 			if (iscl) {
 				scl_idx = (int)(Pulse[i].clockcount / SCL_CLOCK);
 				scl_peak = peaktmp;
@@ -202,7 +241,9 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 					}
 				}
 			}
-		}
+			ppeak[j] = peaktmp;
+			pcharge[j] = chargetmp;
+		} // close for loop
 
 		if (iall || itim) {			
 			// for both cases we need to calculate time difference between consecutive pulses...
@@ -397,6 +438,8 @@ void Usage(char *prog, int verbose=0)
 	cout << "\t-v <chn> \tchecks if channel (1-3) is working (bits and baseline)" << endl;
 	cout << "\t-N <mask>\tindicate what channels have negative undershoots" << endl;
 	cout << "\t         \tUse channel mask 1-7." << endl;
+	cout << "\t-w <1/2> \tenable muon search optimization filter. If 2, compare using charge" << endl;
+	cout << "\t         \tinstead of peak (default value: " << imup << ")." << endl;
 	cout << "\t-u <tr i>\tImpose an offline trigger level for each channel" << endl;
 	cout << "\t         \t(Default value: " << trg_default << " ADC)" << endl;
 	cout << "\t-q <tr i>\tImpose an offline trigger level on 4th bin for each channel" << endl;
@@ -493,6 +536,15 @@ int main (int argc, char *argv[])
 				break;
 			case 'r':
 				iraw=1;
+				break;
+			case 'w':
+				imuo=1;
+				imup=1;
+				if (atof(argv[i+1])) { // false if not selector value was given
+					i++;
+					if (atof(argv[i]) == 2) // use charge
+						imup = 0;
+				}
 				break;
 			case 'a':
 				iall=1;
@@ -651,9 +703,9 @@ int main (int argc, char *argv[])
 
 	for (int i=0; i<CHANNELS; i++) {
 		for (int j=0; j<ADCMAX; j++)
-			Peak[i][j]=Peak_minute[i][j]=Base[i][j]=0;
+			MPeak[i][j]=Peak[i][j]=Peak_minute[i][j]=Base[i][j]=0;
 		for (int j=0; j<CHRGMAX; j++)
-			ECharge[i][j]=Charge[i][j]=Charge_minute[i][j]=0;
+			MCharge[i][j]=ECharge[i][j]=Charge[i][j]=Charge_minute[i][j]=0;
 		for (int j=0; j<MAXTIMEINVECTOR; j++)
 			Time[i][j]=0;
 	}
@@ -746,6 +798,11 @@ int main (int argc, char *argv[])
 		cal << "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)" << endl;
 		cal << "# # This is a file containing the charge and peak calibration histograms" << endl;
 		cal << "# # Format is ch1 ch2 ch3 pk1 pk2 pk3" << endl;
+		if (imuo && imup)
+			cal << "# # Muon search optimization was enabled (filtered by peak). There are six additional columns with ch1m ch2m ch3m pk1m pk2m pk3m using this filter" << endl;
+		if (imuo && !imup)
+			cal << "# # Muon search optimization was enabled (filtered by charge). There are six additional columns with ch1m ch2m ch3m pk1m pk2m pk3m using this filter" << endl;
+
 		if (itrg)
 			cal << "# # An offline trigger of " << trg_level[0] << " " << trg_level[1] << " " << trg_level[2] << " ADC above baseline has been used for each channel respectively." << endl;
 		if (iqtr)
@@ -884,14 +941,24 @@ int main (int argc, char *argv[])
 
 	// Filling calibration histograms
 	for (int j=0; j<CHRGMAX; j++) {
-		for (int i=0; i<CHANNELS; i++)  {
+		for (int i=0; i<CHANNELS; i++)
 			cal << Charge[i][j] << " ";
-		}
-		if (j<ADCMAX) for (int i=0; i<CHANNELS; i++)
+		if (j<ADCMAX)
+			for (int i=0; i<CHANNELS; i++)
 				cal << Peak[i][j] << " ";
+		else 
+			if (imuo)
+				cal << "0 0 0 "; // placeholders
+
+		if (imuo) 
+			for (int i=0; i<CHANNELS; i++)
+				cal << MCharge[i][j] << " ";
+		if (imuo)
+			if (j<ADCMAX)
+				for (int i=0; i<CHANNELS; i++)
+					cal << MPeak[i][j] << " ";
 		cal << endl;
 	}
-
 	//
 	// Channel validation code
 	//
