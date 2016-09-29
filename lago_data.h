@@ -112,11 +112,15 @@ class LagoEvent {
     int GetBase(int channel) {
       return GetPulseBase(channel);
     }
-
-    int GetValAtTrigger(int channel) {
-      return (trace[channel][2] - BASELINE); // Pulse triggered at 3rd bin
+	
+	int GetValAtPos(int channel, int pos) {
+      return (trace[channel][pos - 1] - BASELINE); 
     }
 
+    int GetValAtTrigger(int channel) {
+      return (GetValAtPos(channel, TRIGGERBIN)); // Pulse triggered at 3rd bin
+    }
+    
     int GetCharge(int channel, int negativepulse=0, int max=4095) {
       int charge=0;
       if (negativepulse) {

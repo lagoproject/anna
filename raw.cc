@@ -50,6 +50,7 @@ using namespace std;
 // action flags. Should be improved with a class
 int ical=0, itim=0, isol=0, iall=0, imon=0, force=0, ivalid=0;
 int izip=0, iscl=0, isclg=0, itrg=0, irte=0, iflx=0, ineg[3]= {0,0,0};
+int isat=0, iqtr=0; 
 
 // OLD SCALER ANALYSIS
 // levels should be given above baseline or threshold (-lt modifier).
@@ -76,6 +77,14 @@ double flx_avg[CHANNELS], flx_dev[CHANNELS];
 int trg_level[CHANNELS];
 int trg_default = 85;
 
+// FOURTH BIN TRIGGER
+int qtr_level[CHANNELS];
+int qtr_default = 64;
+
+// SATURATED PEAKS
+int sat_level[CHANNELS];
+int sat_default = ADCMAX - 1;
+
 // TIME DIFFERENCE (AND ALSO ALL PULSE DATA) ANALYSIS
 int tim_pc = 0, tim_pt = 0, tim_dc = 0, tim_dt = 0;
 double tim_ap = 0., tim_map = 0.;
@@ -99,14 +108,14 @@ double mon_dev_bl_tmp;
 int mon_bl_counts;
 
 // AUXILIARY ARRAYS
-int Peak[CHANNELS][1024];
-int Base[CHANNELS][1024];
-int Charge[CHANNELS][4096];
-int ECharge[CHANNELS][4096];
+int Peak[CHANNELS][ADCMAX];
+int Base[CHANNELS][ADCMAX];
+int Charge[CHANNELS][CHRGMAX];
+int ECharge[CHANNELS][CHRGMAX];
 int Time[CHANNELS][MAXTIMEINVECTOR];
 
-int Peak_minute[CHANNELS][1024];
-int Charge_minute[CHANNELS][4096];
+int Peak_minute[CHANNELS][ADCMAX];
+int Charge_minute[CHANNELS][CHRGMAX];
 
 void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 	if (((Data->second)%36)==0)
@@ -135,6 +144,18 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 
 	// processing pulses
 	for (int i=0; i<NbPulses; i++) {
+		// discard saturated and it is a saturated pulse?
+		int sat_drop = 0;
+		if (isat) {
+			for (int j=0; j<CHANNELS; j++) {
+				if (Pulse[i].GetPeak(j) >= sat_level[j]) { // pulse is saturated
+					sat_drop++;
+				}
+			}
+		}
+		if (isat && sat_drop) 
+			continue;
+		
 		// impossing external trigger
 		int trg_drop = 0;
 		if (itrg)
@@ -144,6 +165,17 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 						trg_drop++;
 		if (itrg && trg_drop)
 			continue;
+
+		// impose an additional trigger using values for bin #3
+		int qtr_drop = 0;
+		if (iqtr) 
+			for (int j=0; j<CHANNELS; j++)
+				if (Pulse[i].IsTriggered(j))
+					if (Pulse[i].GetValAtPos(j,4) < qtr_level[j])
+						qtr_drop++;
+		if (iqtr && qtr_drop)
+			continue;
+
 		//we can use this pulse 
 		for (int j=0; j<CHANNELS; j++) {
 			peaktmp = Pulse[i].GetPeak(j);
@@ -291,7 +323,7 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 			fprintf(sol, "# q %d %d %.2f %.2f\n", Data->second, Data->clockfrequency, Data->temperature, Data->pressure);
 			for (int i=0; i<CHANNELS; i++) {
 				fprintf(sol, "0 %d %d %d %.2f %.2f", i, Data->second, Data->clockfrequency, Data->temperature, Data->pressure);
-				for (int j=0; j<4096; j++) {
+				for (int j=0; j<CHRGMAX; j++) {
 					fprintf(sol, " %d", Charge[i][j]-Charge_minute[i][j]);
 					Charge_minute[i][j]=Charge[i][j];
 				}
@@ -300,7 +332,7 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 			fprintf(sol, "# p %d %d %.2f %.2f\n", Data->second, Data->clockfrequency, Data->temperature, Data->pressure);
 			for (int i=0; i<CHANNELS; i++) {
 				fprintf(sol, "1 %d %d %d %.2f %.2f", i, Data->second, Data->clockfrequency, Data->temperature, Data->pressure);
-				for (int j=0; j<1024; j++) {
+				for (int j=0; j<ADCMAX; j++) {
 					fprintf(sol, " %d", Peak[i][j]-Peak_minute[i][j]);
 					Peak_minute[i][j]=Peak[i][j];
 				}
@@ -366,7 +398,11 @@ void Usage(char *prog, int verbose=0)
 	cout << "\t-N <mask>\tindicate what channels have negative undershoots" << endl;
 	cout << "\t         \tUse channel mask 1-7." << endl;
 	cout << "\t-u <tr i>\tImpose an offline trigger level for each channel" << endl;
-	cout << "\t         \tDefault value: " << trg_default << " ADC)" << endl;
+	cout << "\t         \t(Default value: " << trg_default << " ADC)" << endl;
+	cout << "\t-q <tr i>\tImpose an offline trigger level on 4th bin for each channel" << endl;
+	cout << "\t         \t(Default value: " << qtr_default << " ADC)" << endl;
+	cout << "\t-p <tr i>\tRemove saturated pulses (i.e. discard pulses with peak >= <tr i>)" << endl; 
+	cout << "\t         \t(Default value: " << ADCMAX - 1 << " ADC)" << endl;
 	cout << "\t-l <ch> <t_i>\tdefines the " << SCL_LEVELS << " thresholds t_i for the old" << endl;
 	cout << "\t         \tlago-like scalers analysis on channel <ch>."<< endl;
 	cout << "\t         \tFor example: -l 1 5 15 30 50, defines subchannels" << endl;
@@ -419,6 +455,10 @@ int main (int argc, char *argv[])
 		scl_flux[i] = 0;
 	for (int i = 0; i < CHANNELS; i++)
 		trg_level[i] = trg_default;
+	for (int i = 0; i < CHANNELS; i++)
+		qtr_level[i] = qtr_default;
+	for (int i = 0; i < CHANNELS; i++)
+		sat_level[i] = sat_default;
 
 	LagoGeneric Data;
 	LagoEvent *Pulse;
@@ -457,6 +497,22 @@ int main (int argc, char *argv[])
 			case 'a':
 				iall=1;
 				break;
+			case 'p':
+				isat=1;
+				if (atoi(argv[i+1])) { // false if not trigger value was given. Use default levels
+					for (int j = 0; j < CHANNELS; j++) {
+						i++;
+						if (atoi(argv[i])) {
+							sat_level[j] = atoi(argv[i]);
+						}
+						else { // user didn't set the four levels (mandatory): try again.
+							cerr << " Error: you must set one value per channel" << endl;
+							Usage(argv[0]);
+							break;
+						}
+					}
+				}
+				break;
 			case 'u':
 				itrg=1;
 				if (atoi(argv[i+1])) { // false if not trigger value was given. Use default levels
@@ -466,6 +522,22 @@ int main (int argc, char *argv[])
 							trg_level[j] = atoi(argv[i]);
 						}
 						else { // user didn't set the four levels (mandatory): try again.
+							cerr << " Error: you must set one trigger level per channel" << endl;
+							Usage(argv[0]);
+							break;
+						}
+					}
+				}
+				break;
+			case 'q':
+				iqtr=1;
+				if (atoi(argv[i+1])) { // false if not trigger value was given. Use default levels
+					for (int j = 0; j < CHANNELS; j++) {
+						i++;
+						if (atoi(argv[i])) {
+							qtr_level[j] = atoi(argv[i]);
+						}
+						else { // user didn't set the three levels (mandatory): try again.
 							cerr << " Error: you must set one trigger level per channel" << endl;
 							Usage(argv[0]);
 							break;
@@ -553,9 +625,12 @@ int main (int argc, char *argv[])
 
 	Input.Open(nfi);
 
-	for (int j = 0; j < CHANNELS; j++)
+	for (int j = 0; j < CHANNELS; j++) {
 		trg_level[j] -= BASELINE;
-
+		qtr_level[j] -= BASELINE;
+		sat_level[j] -= BASELINE;
+	}
+	
 	char *ifile2;
 	char ifile[256];
 	ifile2=ifiname;
@@ -575,9 +650,9 @@ int main (int argc, char *argv[])
 	}
 
 	for (int i=0; i<CHANNELS; i++) {
-		for (int j=0; j<1024; j++)
+		for (int j=0; j<ADCMAX; j++)
 			Peak[i][j]=Peak_minute[i][j]=Base[i][j]=0;
-		for (int j=0; j<4096; j++)
+		for (int j=0; j<CHRGMAX; j++)
 			ECharge[i][j]=Charge[i][j]=Charge_minute[i][j]=0;
 		for (int j=0; j<MAXTIMEINVECTOR; j++)
 			Time[i][j]=0;
@@ -673,8 +748,12 @@ int main (int argc, char *argv[])
 		cal << "# # Format is ch1 ch2 ch3 pk1 pk2 pk3" << endl;
 		if (itrg)
 			cal << "# # An offline trigger of " << trg_level[0] << " " << trg_level[1] << " " << trg_level[2] << " ADC above baseline has been used for each channel respectively." << endl;
+		if (iqtr)
+			cal << "# # An offline trigger on 4th bin of " << qtr_level[0] << " " << qtr_level[1] << " " << qtr_level[2] << " ADC above baseline has been used for each channel respectively." << endl;
 		if (icaltrg)
 			cal << "# # For each channel we only used triggered pulses at this particular channel (-i option)" << endl;
+		if (isat)
+			cal << "# # Pulses with peak >=" << sat_level[0] << " " << sat_level[1] << " " << sat_level[2] << " ADC above baseline were discarded" << endl;
 	}
 
 	if (itim) {
@@ -686,6 +765,10 @@ int main (int argc, char *argv[])
 			tim << "# # Pulses were discarded if (a/p < " << tim_map << ")"<< endl;
 		if (itrg)
 			tim << "# # An offline trigger of " << trg_level[0] << " " << trg_level[1] << " " << trg_level[2] << " ADC above baseline has been used for each channel respectively." << endl;
+		if (iqtr)
+			tim << "# # An offline trigger on 4th bin of " << qtr_level[0] << " " << qtr_level[1] << " " << qtr_level[2] << " ADC above baseline has been used for each channel respectively." << endl;
+		if (isat)
+			tim << "# # Pulses with peak >=" << sat_level[0] << " " << sat_level[1] << " " << sat_level[2] << " ADC above baseline were discarded" << endl;
 	}
 
 	if (iraw) {
@@ -701,10 +784,14 @@ int main (int argc, char *argv[])
 		fprintf(sol, "# # These are one minute charge and peak histograms, with monitoring information\n");
 		fprintf(sol, "# # Format is # q/p second frequency temperature pressure\n");
 		fprintf(sol, "# # (q for charge and p for peak)\n");
-		fprintf(sol, "# # followed by 0/1 0/1/2 second frequency temperature pressure and 1024 or 4096 values\n");
+		fprintf(sol, "# # followed by 0/1 0/1/2 second frequency temperature pressure and %d or %d values\n", ADCMAX, CHRGMAX);
 		fprintf(sol, "# # where 0/1 stands for charge (0) or peak (1) and 0/1/2 is the channel\n");
 		if (itrg)
 			fprintf(sol, "# # An offline trigger of %d %d %d ADC above baseline has been used for each channel respectively.\n", trg_level[0], trg_level[1], trg_level[2]);
+		if (iqtr)
+			fprintf(sol, "# # An offline trigger on 4th bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", qtr_level[0], qtr_level[1], qtr_level[2]);
+		if (isat)
+			fprintf(sol, "# # Pulses with peak >= %d %d %d ADC above baseline were discarded.\n", sat_level[0], sat_level[1], sat_level[2]);
 	}
 
 	if (iall) {
@@ -716,6 +803,10 @@ int main (int argc, char *argv[])
 		fprintf(all, "# # note: time_to_prev_pulse is in clock cycle, and reset to 0 every second\n");
 		if (itrg)
 			fprintf(all, "# # An offline trigger of %d %d %d ADC above baseline has been used for each channel respectively.\n", trg_level[0], trg_level[1], trg_level[2]);
+		if (iqtr)
+			fprintf(all, "# # An offline trigger on 4th bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", qtr_level[0], qtr_level[1], qtr_level[2]);
+		if (isat)
+			fprintf(all, "# # Pulses with peak >= %d %d %d ADC above baseline were discarded.\n", sat_level[0], sat_level[1], sat_level[2]);
 	}
 
 	if (imon) {
@@ -746,6 +837,10 @@ int main (int argc, char *argv[])
 			fprintf(scl, "compared with the baseline level for each channel (%d adc)\n", BASELINE);
 		if (itrg)
 			fprintf(scl, "# # An offline trigger of %d %d %d ADC above baseline has been used for each channel respectively.\n", trg_level[0], trg_level[1], trg_level[2]);
+		if (iqtr)
+			fprintf(scl, "# # An offline trigger on 4th bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", qtr_level[0], qtr_level[1], qtr_level[2]);
+		if (isat)
+			fprintf(scl, "# # Pulses with peak >= %d %d %d ADC above baseline were discarded.\n", sat_level[0], sat_level[1], sat_level[2]);
 	}
 	if (irte) {
 		fprintf(rte, "# # # p 1 rte %s %s\n", PROJECT, CODEVERSION);
@@ -753,6 +848,12 @@ int main (int argc, char *argv[])
 		fprintf(rte, "# # This is the rate (pulse per second) file.\n");
 		fprintf(rte, "# # Format is:\n");
 		fprintf(rte, "# # second temperature pressure Total_Rate Rate_per_channel:_(%d)_columns\n",CHANNELS);
+		if (itrg)
+			fprintf(rte, "# # An offline trigger of %d %d %d ADC above baseline has been used for each channel respectively.\n", trg_level[0], trg_level[1], trg_level[2]);
+		if (iqtr)
+			fprintf(rte, "# # An offline trigger on 4th bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", qtr_level[0], qtr_level[1], qtr_level[2]);
+		if (isat)
+			fprintf(rte, "# # Pulses with peak >= %d %d %d ADC above baseline were discarded.\n", sat_level[0], sat_level[1], sat_level[2]);
 	}
 	if (iflx) {
 		fprintf(flx, "# # # p 1 flx %s %s\n", PROJECT, CODEVERSION);
@@ -761,6 +862,12 @@ int main (int argc, char *argv[])
 		fprintf(flx, "# # Format is:\n");
 		fprintf(flx, "# # second_at_half_interval avg_temp avg_press avg_rate avg_rate_per_channel sigma_temp sigma_press sigma_rate sigma_rate_per_channel\n");
 		fprintf(flx, "# # Average interval used: %d seconds\n", flx_default);
+		if (itrg)
+			fprintf(flx, "# # An offline trigger of %d %d %d ADC above baseline has been used for each channel respectively.\n", trg_level[0], trg_level[1], trg_level[2]);
+		if (iqtr)
+			fprintf(flx, "# # An offline trigger on 4th bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", qtr_level[0], qtr_level[1], qtr_level[2]);
+		if (isat)
+			fprintf(flx, "# # Pulses with peak >= %d %d %d ADC above baseline were discarded.\n", sat_level[0], sat_level[1], sat_level[2]);
 	}
 
 	/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -770,16 +877,17 @@ int main (int argc, char *argv[])
 	cerr << "Reading file" << endl;
 	while(NbPulses!=-1) {
 		NbPulses=Input.ReadOneSecond(&Data,Pulse,MAXPULSEPERSEC);
-		if (NbPulses>0) TreatSecond(&Data,Pulse,NbPulses);
+		if (NbPulses>0) 
+			TreatSecond(&Data,Pulse,NbPulses);
 	}
 
 
 	// Filling calibration histograms
-	for (int j=0; j<4096; j++) {
+	for (int j=0; j<CHRGMAX; j++) {
 		for (int i=0; i<CHANNELS; i++)  {
 			cal << Charge[i][j] << " ";
 		}
-		if (j<1024) for (int i=0; i<CHANNELS; i++)
+		if (j<ADCMAX) for (int i=0; i<CHANNELS; i++)
 				cal << Peak[i][j] << " ";
 		cal << endl;
 	}
@@ -793,7 +901,7 @@ int main (int argc, char *argv[])
 		ivalid=ivalid-1; // 0 to 2
 		// baseline
 		double b=0,b2=0,n=0;
-		for (int j=0; j<1024; j++) {
+		for (int j=0; j<ADCMAX; j++) {
 			b+=Base[ivalid][j]*1.*j;
 			b2+=Base[ivalid][j]*1.*j*j;
 			n+=Base[ivalid][j];
@@ -806,7 +914,7 @@ int main (int argc, char *argv[])
 			float m=b*1./n;
 			float v=sqrt(b2*1./n-m*m);
 			int bb=0;
-			for (int j=0; j<1024; j++)
+			for (int j=0; j<ADCMAX; j++)
 				if (j<m-5*v || j>m+5*v) bb+=Base[ivalid][j];
 			printf("  Baseline: %lf +- %lf, %lf%% at more than 5 sigmas\n",m,v,bb*100./n);
 			if (m-v>BASELINE || m+v<BASELINE) printf("@ Problem: Baseline is not within 1 sigma of %d\n",BASELINE);
@@ -816,7 +924,7 @@ int main (int argc, char *argv[])
 			for (int i=0; i<10; i++)
 				for (int j=0; j<10; j++) BitHist[i][j]=0;
 			int tv=0;
-			for (int j=BASELINE; j<1024; j++) {
+			for (int j=BASELINE; j<ADCMAX; j++) {
 				tv+=Peak[ivalid][j-BASELINE];
 				for (int i=0; i<10; i++)
 					for (int k=0; k<10; k++)
@@ -827,7 +935,7 @@ int main (int argc, char *argv[])
 			for (int i=0; i<10; i++)
 				for (int j=i; j<10; j++)
 					if (BitHist[i][j]==0) printf("@ Problem: bit combination %d %d never happenning\n",i,j);
-			//for (int j=0; j<1024; j++)
+			//for (int j=0; j<ADCMAX; j++)
 			//printf("%d %d %d\n",j,Peak[ivalid][j],Base[ivalid][j]);
 		}
 	}
