@@ -178,7 +178,7 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 		if (iqtr) 
 			for (int j=0; j<CHANNELS; j++)
 				if (Pulse[i].IsTriggered(j))
-					if (Pulse[i].GetValAtPos(j,4) < qtr_level[j])
+					if (Pulse[i].GetValAtPos(j,TRIGGERBIN + 1) < qtr_level[j])
 						qtr_drop++;
 		if (iqtr && qtr_drop)
 			continue;
@@ -442,7 +442,7 @@ void Usage(char *prog, int verbose=0)
 	cout << "\t         \tinstead of peak (default value: " << imup << ")." << endl;
 	cout << "\t-u <tr i>\tImpose an offline trigger level for each channel" << endl;
 	cout << "\t         \t(Default value: " << trg_default << " ADC)" << endl;
-	cout << "\t-q <tr i>\tImpose an offline trigger level on 4th bin for each channel" << endl;
+	cout << "\t-q <tr i>\tImpose an offline trigger level on " << TRIGGERBIN + 1 << "th bin for each channel" << endl;
 	cout << "\t         \t(Default value: " << qtr_default << " ADC)" << endl;
 	cout << "\t-p <tr i>\tRemove saturated pulses (i.e. discard pulses with peak >= <tr i>)" << endl; 
 	cout << "\t         \t(Default value: " << ADCMAX - 1 << " ADC)" << endl;
@@ -806,7 +806,7 @@ int main (int argc, char *argv[])
 		if (itrg)
 			cal << "# # An offline trigger of " << trg_level[0] << " " << trg_level[1] << " " << trg_level[2] << " ADC above baseline has been used for each channel respectively." << endl;
 		if (iqtr)
-			cal << "# # An offline trigger on 4th bin of " << qtr_level[0] << " " << qtr_level[1] << " " << qtr_level[2] << " ADC above baseline has been used for each channel respectively." << endl;
+			cal << "# # An offline trigger on "<< TRIGGERBIN + 1 << "th bin of " << qtr_level[0] << " " << qtr_level[1] << " " << qtr_level[2] << " ADC above baseline has been used for each channel respectively." << endl;
 		if (icaltrg)
 			cal << "# # For each channel we only used triggered pulses at this particular channel (-i option)" << endl;
 		if (isat)
@@ -823,7 +823,7 @@ int main (int argc, char *argv[])
 		if (itrg)
 			tim << "# # An offline trigger of " << trg_level[0] << " " << trg_level[1] << " " << trg_level[2] << " ADC above baseline has been used for each channel respectively." << endl;
 		if (iqtr)
-			tim << "# # An offline trigger on 4th bin of " << qtr_level[0] << " " << qtr_level[1] << " " << qtr_level[2] << " ADC above baseline has been used for each channel respectively." << endl;
+			tim << "# # An offline trigger on "<< TRIGGERBIN + 1 << "th bin of " << qtr_level[0] << " " << qtr_level[1] << " " << qtr_level[2] << " ADC above baseline has been used for each channel respectively." << endl;
 		if (isat)
 			tim << "# # Pulses with peak >=" << sat_level[0] << " " << sat_level[1] << " " << sat_level[2] << " ADC above baseline were discarded" << endl;
 	}
@@ -846,7 +846,7 @@ int main (int argc, char *argv[])
 		if (itrg)
 			fprintf(sol, "# # An offline trigger of %d %d %d ADC above baseline has been used for each channel respectively.\n", trg_level[0], trg_level[1], trg_level[2]);
 		if (iqtr)
-			fprintf(sol, "# # An offline trigger on 4th bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", qtr_level[0], qtr_level[1], qtr_level[2]);
+			fprintf(sol, "# # An offline trigger on %dth bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", TRIGGERBIN + 1, qtr_level[0], qtr_level[1], qtr_level[2]);
 		if (isat)
 			fprintf(sol, "# # Pulses with peak >= %d %d %d ADC above baseline were discarded.\n", sat_level[0], sat_level[1], sat_level[2]);
 	}
@@ -861,7 +861,7 @@ int main (int argc, char *argv[])
 		if (itrg)
 			fprintf(all, "# # An offline trigger of %d %d %d ADC above baseline has been used for each channel respectively.\n", trg_level[0], trg_level[1], trg_level[2]);
 		if (iqtr)
-			fprintf(all, "# # An offline trigger on 4th bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", qtr_level[0], qtr_level[1], qtr_level[2]);
+			fprintf(all, "# # An offline trigger on %dth bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", TRIGGERBIN + 1, qtr_level[0], qtr_level[1], qtr_level[2]);
 		if (isat)
 			fprintf(all, "# # Pulses with peak >= %d %d %d ADC above baseline were discarded.\n", sat_level[0], sat_level[1], sat_level[2]);
 	}
@@ -895,7 +895,7 @@ int main (int argc, char *argv[])
 		if (itrg)
 			fprintf(scl, "# # An offline trigger of %d %d %d ADC above baseline has been used for each channel respectively.\n", trg_level[0], trg_level[1], trg_level[2]);
 		if (iqtr)
-			fprintf(scl, "# # An offline trigger on 4th bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", qtr_level[0], qtr_level[1], qtr_level[2]);
+			fprintf(scl, "# # An offline trigger on %dth bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", TRIGGERBIN + 1, qtr_level[0], qtr_level[1], qtr_level[2]);
 		if (isat)
 			fprintf(scl, "# # Pulses with peak >= %d %d %d ADC above baseline were discarded.\n", sat_level[0], sat_level[1], sat_level[2]);
 	}
@@ -908,7 +908,7 @@ int main (int argc, char *argv[])
 		if (itrg)
 			fprintf(rte, "# # An offline trigger of %d %d %d ADC above baseline has been used for each channel respectively.\n", trg_level[0], trg_level[1], trg_level[2]);
 		if (iqtr)
-			fprintf(rte, "# # An offline trigger on 4th bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", qtr_level[0], qtr_level[1], qtr_level[2]);
+			fprintf(rte, "# # An offline trigger on %dth bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", TRIGGERBIN + 1, qtr_level[0], qtr_level[1], qtr_level[2]);
 		if (isat)
 			fprintf(rte, "# # Pulses with peak >= %d %d %d ADC above baseline were discarded.\n", sat_level[0], sat_level[1], sat_level[2]);
 	}
@@ -922,7 +922,7 @@ int main (int argc, char *argv[])
 		if (itrg)
 			fprintf(flx, "# # An offline trigger of %d %d %d ADC above baseline has been used for each channel respectively.\n", trg_level[0], trg_level[1], trg_level[2]);
 		if (iqtr)
-			fprintf(flx, "# # An offline trigger on 4th bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", qtr_level[0], qtr_level[1], qtr_level[2]);
+			fprintf(flx, "# # An offline trigger on %dth bin of %d %d %d ADC above baseline has been used for each channel respectively.\n", TRIGGERBIN + 1, qtr_level[0], qtr_level[1], qtr_level[2]);
 		if (isat)
 			fprintf(flx, "# # Pulses with peak >= %d %d %d ADC above baseline were discarded.\n", sat_level[0], sat_level[1], sat_level[2]);
 	}
