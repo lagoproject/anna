@@ -79,7 +79,7 @@ int trg_default = 85;
 
 // FOURTH BIN TRIGGER
 int qtr_level[CHANNELS];
-int qtr_default = 64;
+int qtr_default = 55; // defined by Luis Otiniano, using typical fluctuations at baseline
 
 // SATURATED PEAKS
 int sat_level[CHANNELS];
