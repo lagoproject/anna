@@ -188,7 +188,7 @@ int main (int argc, char *argv[])
 				break;
 			case 's':
 				iflux=1;
-				fluxtime=60.;
+				fluxtime=1.;
 				break;
 			case 'n':
 				iauto=0;

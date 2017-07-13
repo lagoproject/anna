@@ -107,6 +107,9 @@ double mon_avg_bl_tmp;
 double mon_dev_bl_tmp;
 int mon_bl_counts;
 
+// SOL variable time integration
+int iSolTime = 60; // default 60s
+
 // AUXILIARY ARRAYS
 int Peak[CHANNELS][ADCMAX];
 int Base[CHANNELS][ADCMAX];
@@ -360,7 +363,7 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 	}
 
 	if (isol) {
-		if (((Data->second)%60)==0) { // every minute, histograms
+		if (((Data->second)%iSolTime)==0) { // every minute, histograms
 			fprintf(sol, "# q %d %d %.2f %.2f\n", Data->second, Data->clockfrequency, Data->temperature, Data->pressure);
 			for (int i=0; i<CHANNELS; i++) {
 				fprintf(sol, "0 %d %d %d %.2f %.2f", i, Data->second, Data->clockfrequency, Data->temperature, Data->pressure);
@@ -446,6 +449,7 @@ void Usage(char *prog, int verbose=0)
 	cout << "\t         \t(Default value: " << qtr_default << " ADC)" << endl;
 	cout << "\t-p <tr i>\tRemove saturated pulses (i.e. discard pulses with peak >= <tr i>)" << endl; 
 	cout << "\t         \t(Default value: " << ADCMAX - 1 << " ADC)" << endl;
+	cout << "\t-s <time>\tproduces the .sol solar physics file every <time> seconds (default " << iSolTime << " s)" << endl;
 	cout << "\t-l <ch> <t_i>\tdefines the " << SCL_LEVELS << " thresholds t_i for the old" << endl;
 	cout << "\t         \tlago-like scalers analysis on channel <ch>."<< endl;
 	cout << "\t         \tFor example: -l 1 5 15 30 50, defines subchannels" << endl;
@@ -458,7 +462,6 @@ void Usage(char *prog, int verbose=0)
 	cout << "\tModifiers (note they are case sensitive!):" << endl;
 	cout << "\t-h\tprints help and exits" << endl;
 	cout << "\t-c\tproduces the .cal calibration file" << endl;
-	cout << "\t-s\tproduces the .sol solar physics file" << endl;
 	cout << "\t-r\tproduces the .raw " << raw_limit << " second raw file copy" << endl;
 	cout << "\t-m\tproduces the .mon monitoring file" << endl;
 	cout << "\t-f\tforce analysis for older data versions than " << CODEVERSION << endl;
@@ -523,6 +526,10 @@ int main (int argc, char *argv[])
 				break;
 			case 's':
 				isol=1;
+				if (atof(argv[i+1])) { // false if not a/p value was given
+					i++;
+					iSolTime = atof(argv[i]);
+				}
 				break;
 			case 'z':
 				izip=1;
@@ -838,7 +845,8 @@ int main (int argc, char *argv[])
 		fprintf(sol, "# # # p 1 sol %s %s\n", PROJECT, CODEVERSION);
 		fprintf(sol, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
 		fprintf(sol, "# # This is a Solar data file.\n");
-		fprintf(sol, "# # These are one minute charge and peak histograms, with monitoring information\n");
+		fprintf(sol, "# # These are integrated charge and peak histograms, with monitoring information\n");
+		fprintf(sol, "# # Integrated time is %d seconds.\n", iSolTime);
 		fprintf(sol, "# # Format is # q/p second frequency temperature pressure\n");
 		fprintf(sol, "# # (q for charge and p for peak)\n");
 		fprintf(sol, "# # followed by 0/1 0/1/2 second frequency temperature pressure and %d or %d values\n", ADCMAX, CHRGMAX);
