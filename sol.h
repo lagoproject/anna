@@ -43,7 +43,7 @@ const int max_charge=4096;
 int avg_time = 10;
 double fluxtime=1.;
 double diameter = 0., height = 0.;
-int channel=0, start=0, width=0, qs=0, end=max_charge, qe=max_charge;
+int channel=0, start=0, width=0, qs=0, end_hst=max_charge, qe=max_charge;
 char type='0'; //charge
 int Open(char *nfi);
 inline double sign(double x);

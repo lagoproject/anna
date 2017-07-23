@@ -288,25 +288,25 @@ int main (int argc, char *argv[])
 	/* preparing for work */
 	if (ipeak) {
 		type='1';
-		end=1023;
-		if (qe > end) {
+		end_hst=1023;
+		if (qe > end_hst) {
 			fprintf(stderr,"## WARNING ## for peak analysis max. value is 1023. We will integrate up to 1023\n");
 			fprintf(lof,"## WARNING ## for peak analysis max. value is 1023. We will integrate up to 1023\n");
-			qe=end;
+			qe=end_hst;
 		}
 	}
 
 	if (qe > max_charge) {
 		fprintf(stderr,"## WARNING ## qe can't be greater than max_charge=%d. Changing Qe to %d\n", max_charge, max_charge);
 		fprintf(lof,"## WARNING ## qe can't be greater than max_charge=%d. Changing Qe to %d\n", max_charge, max_charge);
-		qe=end;
+		qe=end_hst;
 	}
 
 	/* determine number of bands */
 	int nbands=0;
 	double nb=0.;
 	if (iband) {
-		nb=(1.0*(end-start)/width);
+		nb=(1.0*(end_hst-start)/width);
 		if (nb-int(nb))
 			nb+=1.;
 		nbands=int(nb);
@@ -347,7 +347,7 @@ int main (int argc, char *argv[])
 	fprintf(out, "# # L2 level file (lago@lagoproject.org): flux of signals as function of time\n");
 	fprintf(out, "# # Analysis is done by integrating the whole channel %d charge histogram in\n", channel);
 	if (iband) {
-		fprintf(out, "# # %d bands of %d ADCq starting from %d ADCq and up to %d ADCq\n", nbands, width, start+1, end+1);
+		fprintf(out, "# # %d bands of %d ADCq starting from %d ADCq and up to %d ADCq\n", nbands, width, start+1, end_hst+1);
 		fprintf(out, "# # %d columns format is:\n",nbands+4);
 		if (iflux)
 			fprintf(out, "# # utc pressure temperature total_flux(counts/s) band001 band002 ... band%03d\n",nbands);
