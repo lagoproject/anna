@@ -258,17 +258,19 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 				tim_dt += 40000000;
 
 			if (itim) {// Time difference analysis
-				if (tim_dc == 1) { // use this pulse for time analysis
-					if (tim_dt < MAXTIMEINVECTOR) { // this pulse could fit in the times array
-						for (int j=0; j<CHANNELS; j++) {
-							if (Pulse[i].IsTriggered(j)) { // only use triggered channel
-								if (tim_map) { //aop filter is enabled
-									tim_ap = Pulse[i].GetCharge(j,ineg[j]) / Pulse[i].GetPeak(j);
-									if (tim_ap > tim_map) // that's ok
+				if (tim_dt > 0) { // extra check added by C. Alvarado from LAGO Perú to avoid issues when the detector is offline for long time periods - HGA mié sep 27 14:26:42 ART 2017 - mail received on 2017/09/27 13:57
+					if (tim_dc == 1) { // use this pulse for time analysis
+						if (tim_dt < MAXTIMEINVECTOR) { // this pulse could fit in the times array
+							for (int j=0; j<CHANNELS; j++) {
+								if (Pulse[i].IsTriggered(j)) { // only use triggered channel
+									if (tim_map) { //aop filter is enabled
+										tim_ap = (1.0 * Pulse[i].GetCharge(j,ineg[j])) / (1.0 * Pulse[i].GetPeak(j));
+										if (tim_ap > tim_map) // that's ok>
+											Time[j][tim_dt]++; //Finally
+									}
+									else {
 										Time[j][tim_dt]++; //Finally
-								}
-								else {
-									Time[j][tim_dt]++; //Finally
+									}
 								}
 							}
 						}
@@ -826,7 +828,7 @@ int main (int argc, char *argv[])
 		tim << "# # This is a file containing the time difference histogram" << endl;
 		tim << "# # Format is #time_difference(ns) #count for each channel" << endl;
 		if (tim_map)
-			tim << "# # Pulses were discarded if (a/p < " << tim_map << ")"<< endl;
+			tim << "# # Pulses were discarded if (a/p <= " << tim_map << ")"<< endl;
 		if (itrg)
 			tim << "# # An offline trigger of " << trg_level[0] << " " << trg_level[1] << " " << trg_level[2] << " ADC above baseline has been used for each channel respectively." << endl;
 		if (iqtr)
