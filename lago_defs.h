@@ -36,11 +36,19 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #define DATAVERSION 5 
 
 #define CHANNELS 3
-#define TRACELEN 12
 #define BASELINE 50
+#define TRIGGERBIN 3
+
+#ifdef RED_PITAYA
+#define TRACELEN 30
+#define BIN 10.
+#define ADCMAX 8192
+#define CHRGMAX 32768
+#else
+#define TRACELEN 12
 #define BIN 25.
 #define ADCMAX 1024
 #define CHRGMAX 4096
-#define TRIGGERBIN 3
+#endif
 
 #endif
