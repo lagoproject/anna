@@ -84,6 +84,8 @@ int qtr_default = 55; // defined by Luis Otiniano, using typical fluctuations at
 // SATURATED PEAKS
 int sat_level[CHANNELS];
 int sat_default = ADCMAX - 1;
+bool sat_discard = false;
+int sat_drop[CHANNELS];
 
 // TIME DIFFERENCE (AND ALSO ALL PULSE DATA) ANALYSIS
 int tim_pc = 0, tim_pt = 0, tim_dc = 0, tim_dt = 0;
@@ -106,6 +108,9 @@ double mon_pulse_bl;
 double mon_avg_bl_tmp;
 double mon_dev_bl_tmp;
 int mon_bl_counts;
+
+// VERBOSITY
+int iverbose=0;
 
 // SOL variable time integration
 int iSolTime = 60; // default 60s
@@ -155,15 +160,16 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 	// processing pulses
 	for (int i=0; i<NbPulses; i++) {
 		// discard saturated and it is a saturated pulse?
-		int sat_drop = 0;
+		sat_discard = false;
 		if (isat) {
 			for (int j=0; j<CHANNELS; j++) {
 				if (Pulse[i].GetPeak(j) >= sat_level[j]) { // pulse is saturated
-					sat_drop++;
+					sat_drop[j]++;
+					sat_discard=true;
 				}
 			}
 		}
-		if (isat && sat_drop) 
+		if (isat && sat_discard)
 			continue;
 		
 		// impossing external trigger
@@ -414,7 +420,7 @@ void TreatSecond(LagoGeneric *Data, LagoEvent*Pulse, int NbPulses) {
 	}
 }
 
-void Usage(char *prog, int verbose=0)
+void Usage(char *prog)
 {
 	cout << "\t" << PROJECT << " " << CODEVERSION << endl;
 	cout << endl;
@@ -475,6 +481,7 @@ void Usage(char *prog, int verbose=0)
 	cout << "\t-i\tOnly include pulses that trigger each channel to fill" << endl; 
 	cout << "\t  \tthe calibration histograms of each channel (by default," << endl; 
 	cout << "\t  \tall pulses are included." << endl;
+	cout << "\t-V\tincrease verbosity level." << endl;
     cout << "\t-?\tprints this help and exits" << endl << endl;
 	cout << endl;
 	exit(1);
@@ -501,6 +508,8 @@ int main (int argc, char *argv[])
 				scl_scalers[i][j][l]=0;
 	for (int i = 0; i < CHANNELS; i++)
 		scl_flux[i] = 0;
+	for (int i = 0; i < CHANNELS; i++)
+		sat_drop[i] = 0;
 	for (int i = 0; i < CHANNELS; i++)
 		trg_level[i] = trg_default;
 	for (int i = 0; i < CHANNELS; i++)
@@ -616,6 +625,9 @@ int main (int argc, char *argv[])
 					flx_default = atof(argv[i]);
 					iflx = 1;
 				}
+				break;
+			case 'V':
+				iverbose=1;
 				break;
 			case 'g':
 				isclg=1;
@@ -736,6 +748,8 @@ int main (int argc, char *argv[])
 		snprintf(nfi,256,"%s.raw",ifile);
 		raw.open(nfi);
 	}
+	if (iverbose)
+		fprintf(stderr,"Verbose mode is on\n");
 
 	if (iall) {
 		snprintf(nfi,256,"bzip2 -9z > %s.all.bz2",ifile);
@@ -1055,5 +1069,13 @@ int main (int argc, char *argv[])
 			fclose(sol);
 		if (iscl)
 			fclose(scl);
+	}
+	if (iverbose) {
+		if (isat) {
+			fprintf(stderr, "INFO: saturated pulses discarded:\n\t\t");
+			for (int j=0; j<CHANNELS; j++)
+				fprintf(stderr, "channel %d: %d. ", j+1, sat_drop[j]);
+			fprintf(stderr, "\n");
+		}
 	}
 }

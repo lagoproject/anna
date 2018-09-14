@@ -148,7 +148,7 @@ class LagoFile {
           }
         }
         else { // reading pulse
-          int c0,c1,c2;
+          int c0=0, c1=0, c2=0;
           sscanf(line, "%d %d %d\n", &c0, &c1, &c2);
           Pulse[NbPulses].fill(c0,c1,c2);
         }
