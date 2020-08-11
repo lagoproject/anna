@@ -39,7 +39,7 @@ using namespace std;
 //global variables
 int irange=0, ipos=0, iband=0, ipeak=0, icompress=0, iflux = 0, iauto=1, iverbose=0;
 int check = 0;
-const int max_charge=4096;
+const int max_charge=CHRGMAX;
 int avg_time = 10;
 double fluxtime=1.;
 double diameter = 0., height = 0.;

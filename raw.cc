@@ -491,7 +491,7 @@ int main (int argc, char *argv[])
 {
 	LagoFile Input;
 
-	char nfi[256];
+	char nfi[260];
 	char *ifiname=NULL;
 	int NbPulses=0;
 	int scl_ch_set=0;
@@ -690,7 +690,7 @@ int main (int argc, char *argv[])
 		cerr << endl << "Error: Missing filename" << endl << endl;
 		Usage(argv[0]);
 	}
-	snprintf(nfi,256,"%s",ifiname);
+	snprintf(nfi,260,"%s",ifiname);
 	if (isclg && !iscl) {
 		cerr << endl << "Error: Try using -g -l" << endl << endl;
 		Usage(argv[0]);
@@ -735,24 +735,24 @@ int main (int argc, char *argv[])
 		fprintf(stderr,"Validating channel %d\n",ivalid);
 
 	if (ical) {
-		snprintf(nfi,256,"%s.cal",ifile);
+		snprintf(nfi,260,"%s.cal",ifile);
 		cal.open(nfi);
 	}
 
 	if (itim) {
-		snprintf(nfi,256,"%s.tim",ifile);
+		snprintf(nfi,260,"%s.tim",ifile);
 		tim.open(nfi);
 	}
 
 	if (iraw) {
-		snprintf(nfi,256,"%s.raw",ifile);
+		snprintf(nfi,260,"%s.raw",ifile);
 		raw.open(nfi);
 	}
 	if (iverbose)
 		fprintf(stderr,"Verbose mode is on\n");
 
 	if (iall) {
-		snprintf(nfi,256,"bzip2 -9z > %s.all.bz2",ifile);
+		snprintf(nfi,276,"bzip2 -9z > %s.all.bz2",ifile);
 		if ((all = popen(nfi,"w"))==NULL) {
 			fprintf(stderr,"Failed to open compressed all particles file. Abort.\n");
 			exit(1);
@@ -760,14 +760,14 @@ int main (int argc, char *argv[])
 	}
 
 	if (imon) {
-		snprintf(nfi,256,"%s.mon",ifile);
+		snprintf(nfi,260,"%s.mon",ifile);
 		if ((mon = fopen(nfi,"w"))==NULL) {
 			fprintf(stderr,"Failed to open monitoring file. Abort.\n");
 			exit(1);
 		}
 	}
 	if (irte) {
-		snprintf(nfi,256,"%s.rte",ifile);
+		snprintf(nfi,260,"%s.rte",ifile);
 		if ((rte = fopen(nfi,"w"))==NULL) {
 			fprintf(stderr,"Failed to open rate file. Abort.\n");
 			exit(1);
@@ -775,7 +775,7 @@ int main (int argc, char *argv[])
 	}
 
 	if (iflx) {
-		snprintf(nfi,256,"%s.flx",ifile);
+		snprintf(nfi,260,"%s.flx",ifile);
 		if ((flx = fopen(nfi,"w"))==NULL) {
 			fprintf(stderr,"Failed to open flux file. Abort.\n");
 			exit(1);
@@ -784,14 +784,14 @@ int main (int argc, char *argv[])
 
 	if (isol) {
 		if (izip) {
-			snprintf(nfi,256,"bzip2 -9z > %s.sol.bz2",ifile);
+			snprintf(nfi,276,"bzip2 -9z > %s.sol.bz2",ifile);
 			if ((sol = popen(nfi,"w"))==NULL) {
 				fprintf(stderr,"Failed to open compressed solar file. Abort.\n");
 				exit(1);
 			}
 		}
 		else {
-			snprintf(nfi,256,"%s.sol",ifile);
+			snprintf(nfi,260,"%s.sol",ifile);
 			if ((sol = fopen(nfi,"w"))==NULL) {
 				fprintf(stderr,"Failed to open scaler file. Abort.\n");
 				exit(1);
@@ -801,14 +801,14 @@ int main (int argc, char *argv[])
 
 	if (iscl) {
 		if (izip) {
-			snprintf(nfi,256,"bzip2 -9z > %s.scl.bz2",ifile);
+			snprintf(nfi,276,"bzip2 -9z > %s.scl.bz2",ifile);
 			if ((scl = popen(nfi,"w"))==NULL) {
 				fprintf(stderr,"Failed to open compressed scaler file. Abort.\n");
 				exit(1);
 			}
 		}
 		else {
-			snprintf(nfi,256,"%s.scl",ifile);
+			snprintf(nfi,260,"%s.scl",ifile);
 			if ((scl = fopen(nfi,"w"))==NULL) {
 				fprintf(stderr,"Failed to open scaler file. Abort.\n");
 				exit(1);

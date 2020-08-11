@@ -121,7 +121,7 @@ class LagoEvent {
       return (GetValAtPos(channel, TRIGGERBIN)); // Pulse triggered at 3rd bin
     }
     
-    int GetCharge(int channel, int negativepulse=0, int max=4095) {
+    int GetCharge(int channel, int negativepulse=0, int max=CHRGMAX-1) {
       int charge=0;
       if (negativepulse) {
         // negative pulse for Boyita and other detectors where pulse

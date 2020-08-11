@@ -140,7 +140,7 @@ void Usage(char *prog)
 
 int main (int argc, char *argv[])
 {
-	char nfi[256]; // filename container
+	char nfi[252]; // filename container
 	char *ifiname=NULL; // input
 
 	/* reading arguments from command line */
@@ -246,7 +246,7 @@ int main (int argc, char *argv[])
 	}
 
 	/* input */
-	snprintf(nfi,256,"%s",ifiname);
+	snprintf(nfi,252,"%s",ifiname);
 	Open(nfi);
 	if (iverbose)
 		fprintf(stderr, "## STATUS ## Analyzing %s\n", nfi);
@@ -276,7 +276,7 @@ int main (int argc, char *argv[])
 	/* end of preparing outputs */
 
 	// log file
-	snprintf(nfi,256,"%s.log", ifile);
+	snprintf(nfi,277,"%s.log", ifile);
 	if ((lof = fopen(nfi,"w"))==NULL) {
 		fprintf(stderr,"\n## ERROR ## Failed to open log file. Abort.\n");
 		exit(1);
@@ -314,13 +314,13 @@ int main (int argc, char *argv[])
 
 	/* open outputs and headers */
 	if (icompress) {  // open output file (.flx) via fopen or popen for compressed output files
-		snprintf(nfi,256,"bzip2 -9z > %s.flx.bz2", ifile);
+		snprintf(nfi,277,"bzip2 -9z > %s.flx.bz2", ifile);
 		if ((out = popen(nfi,"w"))==NULL) {
 			fprintf(stderr,"\n## ERROR ## Failed to open compressed output file. Abort.\n");
 			exit(1);
 		}
 		if (iauto) {
-			snprintf(nfi,256,"bzip2 -9z > %s.auto.bz2", ifile);
+			snprintf(nfi,277,"bzip2 -9z > %s.auto.bz2", ifile);
 			if ((muo = popen(nfi,"w"))==NULL) {
 				fprintf(stderr,"\n## ERROR ## Failed to open compressed automatic flux file. Abort.\n");
 				exit(1);
@@ -328,13 +328,13 @@ int main (int argc, char *argv[])
 		}
 	}
 	else {
-		snprintf(nfi,256,"%s.flx",ifile);
+		snprintf(nfi,277,"%s.flx",ifile);
 		if ((out = fopen(nfi,"w"))==NULL) {
 			fprintf(stderr,"\n## ERROR ## Failed to open output file. Abort.\n");
 			exit(1);
 		}
 		if (iauto) {
-			snprintf(nfi,256,"%s.auto", ifile);
+			snprintf(nfi,277,"%s.auto", ifile);
 			if ((muo = fopen(nfi,"w"))==NULL) {
 				fprintf(stderr,"\n## ERROR ## Failed to open automatic flux file. Abort.\n");
 				exit(1);
@@ -419,7 +419,7 @@ int main (int argc, char *argv[])
 	 * trying to open histogram file
 	 */
 	if (iauto) {
-		snprintf(nfi,256,"%s.cal",ifile0);
+		snprintf(nfi,277,"%s.cal",ifile0);
 		if ((cal = fopen(nfi,"r"))==NULL) {
 			fprintf(stderr,"\n## ERROR ## Failed to open calibration histogram file (%s). Abort.\n",nfi);
 			exit(1);
@@ -564,7 +564,7 @@ int main (int argc, char *argv[])
 		/* So, we have the histogram seeds, let's fit them */
 		double tmpk=0.;
 		if (ipos) {
-			snprintf(nfi,256,"%s.pos",ifile);
+			snprintf(nfi,277,"%s.pos",ifile);
 			if ((pof = fopen(nfi,"w"))==NULL) {
 				fprintf(stderr,"\n## ERROR ## Failed to open pos file. Abort.\n");
 				exit(1);
@@ -646,7 +646,7 @@ int main (int argc, char *argv[])
 			if (iverbose)
 				fprintf(stderr, "## STATUS ## Some test failed for this file. Please check manually.\n");
 			fprintf(lof, "## STATUS ## Some test failed for this file. Please check manually.\n");
-			snprintf(nfi,256,"touch %s.err",ifile);
+			snprintf(nfi,277,"touch %s.err",ifile);
 			system(nfi);
 			if (iverbose)
 				fprintf(stderr, "## STATUS ## Error indicator file %s.err created\n", ifile);
