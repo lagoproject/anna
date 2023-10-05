@@ -1,32 +1,17 @@
 /*
- * raw.cc  --  analyze "raw" (L0) data and produce the preprocessed "preliminary" (L1) data set.
- *
- *  Copyright (C) 2012-TODAY The LAGO Project, http://lagoproject.org, lago-pi@lagoproject.org
- *
- *  Original authors: Hernán Asorey, Xavier Bertou
- *  e-mail: asoreyh@cab.cnea.gov.ar  (asoreyh@gmail.com)
- *  Laboratorio de Detección de Partículas y Radiación (LabDPR)
- *  Centro Atómico Bariloche - San Carlos de Bariloche, Argentina
- */
-
-/* LICENSE BSD-3-Clause
-Copyright (c) 2012, The LAGO Project
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+################################################################################
+# File:        raw.cc
+# Description: Clean and analyze the L0 (raw) data measured at the LAGO WCD 
+# 			   detectors and produce the preprocessed L1 (preliminary) data set.
+# Author:      Hernán Asorey
+# Email:       asoreyh@gmail.com
+# Date:        2012
+# 
+# Copyright:   [2012] [The LAGO Collaboration]
+# License:     BSD-3-Clause
+# See the LICENSE file in the project root for full license information.
+################################################################################
 */
-
-/*  -*- coding: utf8 -*-
- *  try to preserve encoding  */
-/************************************************************************/
 #define _FILE_OFFSET_BITS 64
 
 #include <string.h>
@@ -424,13 +409,8 @@ void Usage(char *prog)
 {
 	cout << "\t" << PROJECT << " " << CODEVERSION << endl;
 	cout << endl;
-	cout << "\t(c) 2012-Today, The LAGO Project, http://lagoproject.org" << endl;
-	cout << "\t(c) 2012, LabDPR, http://labdpr.cab.cnea.gov.ar" << endl;
-	cout << endl;
-	cout << "\tThe LAGO Project, lago@lagoproject.org" << endl;
-	cout << endl;
-	cout << "\tDPR Lab. 2012" << endl;
-	cout << "\tX. Bertou and H. Asorey, asoreyh@cab.cnea.gov.ar" << endl;
+	cout << "\t(c) 2012, The LAGO Project, http://lagoproject.net" << endl;
+	cout << "\tH. Asorey, asoreyh@gmail.com" << endl;
 	cout << endl;
 	cout << "\tRaw data analysis suite for the LAGO Project (L0 -> L1)" << endl; 
 	cout << "Usage: " << prog << " [modifiers] <options> <values> <raw_file>[.dat[.bz2]]" << endl;
@@ -818,7 +798,7 @@ int main (int argc, char *argv[])
 
 	if (ical) {
 		cal << "# # # p 1 cal " << PROJECT << " " << CODEVERSION << endl;
-		cal << "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)" << endl;
+		cal << "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.net)" << endl;
 		cal << "# # This is a file containing the charge and peak calibration histograms" << endl;
 		cal << "# # Format is ch1 ch2 ch3 pk1 pk2 pk3" << endl;
 		if (imuo && imup)
@@ -838,7 +818,7 @@ int main (int argc, char *argv[])
 
 	if (itim) {
 		tim << "# # # p 1 tim " << PROJECT << " " << CODEVERSION << endl;
-		tim << "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)" << endl;
+		tim << "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.net)" << endl;
 		tim << "# # This is a file containing the time difference histogram" << endl;
 		tim << "# # Format is #time_difference(ns) #count for each channel" << endl;
 		if (tim_map)
@@ -853,13 +833,13 @@ int main (int argc, char *argv[])
 
 	if (iraw) {
 		raw << "# # # p 1 raw " << PROJECT << " " << CODEVERSION << endl;
-		raw << "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)" << endl;
+		raw << "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.net)" << endl;
 		raw << "# # This is a RAW file containing the first 10 seconds of data" << endl;
 	}
 
 	if (isol) {
 		fprintf(sol, "# # # p 1 sol %s %s\n", PROJECT, CODEVERSION);
-		fprintf(sol, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
+		fprintf(sol, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.net)\n");
 		fprintf(sol, "# # This is a Solar data file.\n");
 		fprintf(sol, "# # These are integrated charge and peak histograms, with monitoring information\n");
 		fprintf(sol, "# # Integrated time is %d seconds.\n", iSolTime);
@@ -877,7 +857,7 @@ int main (int argc, char *argv[])
 
 	if (iall) {
 		fprintf(all, "# # # p 1 all %s %s\n", PROJECT, CODEVERSION);
-		fprintf(all, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
+		fprintf(all, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.net)\n");
 		fprintf(all, "# # This is a file containing all processed data\n");
 		fprintf(all, "# # Format is # second frequency temperature pressure\n");
 		fprintf(all, "# #   time_to_prev_pulse counts_to_prev_pulse channels_triggered_mask ch_ch1 pk_ch1 ch_ch2 pk_ch2 ch_ch3 pk_ch3 risetime_ch1 falltime_ch1 risetime_ch2 falltime_ch2 risetime_ch3 falltime_ch3 (channel <i> is printed only if it triggered)\n");
@@ -892,14 +872,14 @@ int main (int argc, char *argv[])
 
 	if (imon) {
 		fprintf(mon, "# # # p 1 all %s %s\n", PROJECT, CODEVERSION);
-		fprintf(mon, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
+		fprintf(mon, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.net)\n");
 		fprintf(mon, "# # This is a monitoring file.\n");
 		fprintf(mon, "# # Format is second frequency temperature pressure average_baseline_chN dev_baseline_chN\n");  
 	}
 
 	if (iscl) {
 		fprintf(scl, "# # # p 1 scl %s %s\n", PROJECT, CODEVERSION);
-		fprintf(scl, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
+		fprintf(scl, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.net)\n");
 		fprintf(scl, "# # This is the old-lago-like scaler file.\n");
 		fprintf(scl, "# # Format is:\n");
 		fprintf(scl, "# # # s second frequency temperature pressure Total_Rate Rate_per_channel:_(%d)_columns\n",CHANNELS);
@@ -925,7 +905,7 @@ int main (int argc, char *argv[])
 	}
 	if (irte) {
 		fprintf(rte, "# # # p 1 rte %s %s\n", PROJECT, CODEVERSION);
-		fprintf(rte, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
+		fprintf(rte, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.net)\n");
 		fprintf(rte, "# # This is the rate (pulse per second) file.\n");
 		fprintf(rte, "# # Format is:\n");
 		fprintf(rte, "# # second temperature pressure Total_Rate Rate_per_channel:_(%d)_columns\n",CHANNELS);
@@ -938,7 +918,7 @@ int main (int argc, char *argv[])
 	}
 	if (iflx) {
 		fprintf(flx, "# # # p 1 flx %s %s\n", PROJECT, CODEVERSION);
-		fprintf(flx, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.org)\n");
+		fprintf(flx, "# # L1 level file (processed raw data, use at your own risk or contact lago@lagoproject.net)\n");
 		fprintf(flx, "# # This is the flux file.\n");
 		fprintf(flx, "# # Format is:\n");
 		fprintf(flx, "# # second_at_half_interval avg_temp avg_press avg_rate avg_rate_per_channel sigma_temp sigma_press sigma_rate sigma_rate_per_channel\n");

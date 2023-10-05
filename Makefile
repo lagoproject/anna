@@ -1,59 +1,54 @@
-#   Makefile   -- 
-#   Copyright (C) 2012-TODAY The LAGO Project, http://lagoproject.org, lago-pi@lagoproject.org
-#   Original authors: Hernán Asorey
-#   e-mail: asoreyh@cab.cnea.gov.ar  (asoreyh@gmail.com)
-#   Laboratorio de Detección de Partículas y Radiación (LabDPR)
-#   Centro Atómico Bariloche - San Carlos de Bariloche, Argentina 
-#
-# LICENSE BSD-3-Clause
-# Copyright (c) 2012, The LAGO Project
-# All rights reserved.
+################################################################################
+# File:        Makefile
+# Description: Builds the ANNA toolsuite, a scientific tool for analyzing 
+#              LAGO astrophysical data. Provides targets for building applications 
+#              (dump, example, raw, sol, ...) and cleaning build artifacts.
+# Author:      Hernán Asorey
+# Email:       asoreyh@gmail.com
+# Date:        2012-2023
 # 
-# Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-# 
-# 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-# 
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-# 
-# 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-# 
+# Copyright:   [2012] [The LAGO Collaboration]
+# License:     BSD-3-Clause
+# See the LICENSE file in the project root for full license information.
+################################################################################
 
-#   -*- coding: utf8 -*-
-#   try to preserve encoding  
-CC = g++
+# Compiler and compile options
+CXX = g++
+CXXFLAGS = -Wall -Iinclude
 
-TESTS = check-lago
-TARGETS = raw sol example dump
-CFLAGS = -Wall
+# Source and build directories
+SRC_DIR = src
+BUILD_DIR = build
 
-all: $(TESTS) $(TARGETS)
+# Tests
+TESTS = check-env
 
-raw: raw.cc lago_file.h lago_data.h
-	$(CC) -o $@ $< $(CFLAGS)
+# Applications
+APPS = dump example raw sol
 
-grb: grb.cc lago_file.h lago_data.h
-	$(CC) -o $@ $< $(CFLAGS)
+# Default target
+all: $(TESTS) $(APPS)
 
-sol: sol.cc lago_file.h lago_data.h
-	$(CC) -o $@ $< $(CFLAGS)
+# Compile each application
+$(APPS): %: $(BUILD_DIR)/%.o
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
-example: example.cc lago_file.h lago_data.h
-	$(CC) -o $@ $< $(CFLAGS)
+# Rule for compiling object files
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cc
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-dump: dump.cc lago_file.h lago_data.h
-	$(CC) -o $@ $< $(CFLAGS)
-
-.PHONY: clean
-
+# Clean up
 clean:
-	rm -f $(TARGETS)
+	rm -rf $(BUILD_DIR) $(APPS)
 
-check-lago:
+.PHONY: all clean
+
+check-env:
 ifndef LAGO_ANNA
-$(info LAGO_ANNA is not set.)
-$(info I will define it to $PWD, and modify the .bashrc)
+$(warning LAGO_ANNA is not set. I will define it to $(PWD), and modify the .bashrc)
 $(shell $(PWD)/lago-anna.sh)
 LAGO_ANNA=$(PWD)
+else
+$(info Environment variable LAGO_ANNA is set to $(LAGO_ANNA))
 endif
