@@ -1,4 +1,4 @@
-<!-- [![DOI](https://zenodo.org/badge/28657065.svg)](https://zenodo.org/badge/latestdoi/28657065) -->
+[![DOI](https://zenodo.org/badge/28655555.svg)](https://zenodo.org/badge/latestdoi/28655555)
 <div id="top"></div>
 <br />
 <div align="center">
@@ -69,7 +69,7 @@ The measured data LAGO dataset corresponds to any type of data that was measured
 
 When using ANNA, please cite using the DOI included at the begininig of this file. 
 
-H. Asorey for the LAGO Collaboration, _"The LAGO ANNA Data Analysis framework"_, [doi:_SOON_](https://doi.org/).
+H. Asorey for the LAGO Collaboration, _"The LAGO ANNA Data Analysis framework"_, version vM.m.p [doi:10.5281/zenodo.8411282](https://doi.org/10.5281/zenodo.8411282).
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -78,7 +78,7 @@ H. Asorey for the LAGO Collaboration, _"The LAGO ANNA Data Analysis framework"_,
 Currently, two electronic boards are consistenly used across the LAGO detection network. Two different versions were developed for [LAGO ACQUA](https://github.com/lagoproject/acqua), the LAGO data acquisition package. LAGO ANNA follows the same schema:
 
 * LAGO ANNA v1.x.x: Compatible with LAGO ACQUA v1, for the electronic board based on the NEXYS-II FPGA. Current version is the last developed version, [LAGO ACQUA v1.5.0](https://github.com/lagoproject/acqua/releases/tag/acqua-v1.5.0). In general, LAGO ANNA v1 are compatible with data acquired using LAGO ACQUA v1. 
-* LAGO ANNA v2.x.x: Compatible with LAGO ACQUA v2, designed for the electronic board based on the StemLab 125/14 RedPitaya electronic board. This is currently under actively development. 
+* LAGO ANNA v2.x.x: Compatible with LAGO ACQUA v2, designed for the electronic board based on the [RedPitaya StemLab 125/14](https://redpitaya.com/stemlab-125-14/) electronic board. This is currently under actively development. 
 * LAGO ANNA v3.x.x: This will be developed for the new LAGO EDGE detection schema. 
 
 Major versions for both the LAGO ACQUA and the LAGO ANNA frameworks are developed in different branchs and identified with the corresponding tags. Master branch always points to the latest stable development. 
