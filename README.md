@@ -1,4 +1,9 @@
-# ![The LAGO Project](http://lagoproject.org/images/lago-logo-90.png "The LAGO Project") The LAGO ANNA suite
+# The LAGO Project ANNA suite
+
+
+## WARNING: This is a deprecated package and soon will be discontinued. If you are looking for the LAGO ANNA data analysis suite compatible with the RedPitaya-based electronic board, please check for LAGO ANNA v2.x.x branches or tags
+
+<br>
 
 | CODENAME			| ANNA  |
 |-------------------|:------|
