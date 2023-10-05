@@ -1,30 +1,18 @@
-/*  sol.cc  -- code oriented to perform Space Weather related analysis from 1-minute histograms
- *
- *  Copyright (C) 2012-TODAY The LAGO Project, http://lagoproject.org, lago-pi@lagoproject.org
- *
- *  Original authors: Hernán Asorey
- *  e-mail: asoreyh@cab.cnea.gov.ar  (asoreyh@gmail.com)
- *  Laboratorio de Detección de Partículas y Radiación (LabDPR)
- *  Centro Atómico Bariloche - San Carlos de Bariloche, Argentina */
-
-/* LICENSE BSD-3-Clause
-Copyright (c) 2012, The LAGO Project
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+/*
+################################################################################
+# File:        sol.cc
+# Description: Analyze L1 data for producing and analyzing 1-minute charge 
+# 			   (as part of the L2 (quality) data files), intented for be part of 
+#			   the high quality data release in the LAGO space weather program. 
+# Author:      Hernán Asorey
+# Email:       asoreyh@gmail.com
+# Date:        2012
+# 
+# Copyright:   [2012] [The LAGO Collaboration]
+# License:     BSD-3-Clause
+# See the LICENSE file in the project root for full license information.
+################################################################################
 */
-
-/*  -*- coding: utf8 -*-
- *  try to preserve encoding  */
-/************************************************************************/
 #include "sol.h"
 
 /* Functions */
@@ -103,13 +91,9 @@ void Usage(char *prog)
 {
 	cout << "\t" << PROJECT << " " << CODEVERSION << endl;
 	cout << endl;
-    cout << "\t(c) 2012-Today, The LAGO Project, http://lagoproject.org" << endl;
-    cout << "\t(c) 2012, LabDPR, http://labdpr.cab.cnea.gov.ar" << endl;
+    cout << "\t(c) 2012, The LAGO Project, http://lagoproject.net" << endl;
     cout << endl;
-    cout << "\tThe LAGO Project, lago@lagoproject.org" << endl;
-    cout << endl;
-    cout << "\tHalley (UIS) and ULA 2014" << endl;
-    cout << "\tY. Perez and H. Asorey, asoreyh@cab.cnea.gov.ar" << endl;
+    cout << "\tH. Asorey, asoreyh@gmail.com" << endl;
     cout << endl;
 	cout << "\tSpace Weather dedicated analysis (L1 -> L2SW)" << endl;
 	cout << "\tAnalyze .sol output files to identify solar modulation phenomena." << endl;
@@ -282,7 +266,7 @@ int main (int argc, char *argv[])
 		exit(1);
 	}
 	fprintf(lof, "# # # L2 log %s %s\n", PROJECT, CODEVERSION);
-	fprintf(lof, "# # L2 level file (lago@lagoproject.org): fit log for the sol automatic procedure\n");
+	fprintf(lof, "# # L2 level file (lago@lagoproject.net): fit log for the sol automatic procedure\n");
 	fprintf(lof, "## STATUS ## Analyzing %s\n", ifile);
 
 	/* preparing for work */
@@ -344,7 +328,7 @@ int main (int argc, char *argv[])
 
 	// headers
 	fprintf(out, "# # # L2 flx %s %s\n", PROJECT, CODEVERSION);
-	fprintf(out, "# # L2 level file (lago@lagoproject.org): flux of signals as function of time\n");
+	fprintf(out, "# # L2 level file (lago@lagoproject.net): flux of signals as function of time\n");
 	fprintf(out, "# # Analysis is done by integrating the whole channel %d charge histogram in\n", channel);
 	if (iband) {
 		fprintf(out, "# # %d bands of %d ADCq starting from %d ADCq and up to %d ADCq\n", nbands, width, start+1, end_hst+1);
@@ -364,7 +348,7 @@ int main (int argc, char *argv[])
 	}
 	if (iauto) {
 		fprintf(muo, "# # # L2 flx %s %s\n", PROJECT, CODEVERSION);
-		fprintf(muo, "# # L2 level file (lago@lagoproject.org): flux of signals as function of time\n");
+		fprintf(muo, "# # L2 level file (lago@lagoproject.net): flux of signals as function of time\n");
 		fprintf(muo, "# # Analysis is done by automaticaly detection of calibration histogram features\n");
 		fprintf(muo, "# # on channel %d, and integrating the flux in four different bands of deposited energy.\n", channel);
 		fprintf(muo, "# # Detector diameter=%.1f mm. Detector height=%.1f mm\n", diameter, height);
@@ -570,7 +554,7 @@ int main (int argc, char *argv[])
 				exit(1);
 			}
 			fprintf(pof, "# # # L2 pos %s %s\n", PROJECT, CODEVERSION);
-			fprintf(pof, "# # L2 level file (lago@lagoproject.org): file to check goodness of fit for automatic detection\n");
+			fprintf(pof, "# # L2 level file (lago@lagoproject.net): file to check goodness of fit for automatic detection\n");
 			fprintf(pof, "# # 4 columns format is:\n");
 			fprintf(pof, "# # Feature_Index Seed_for_fit Feature analyzed_file\n");
 		}
