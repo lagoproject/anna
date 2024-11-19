@@ -103,8 +103,14 @@ class LagoFile {
               break;
             case 'x':         // extra data
               switch (line[4]) {
-                case 's':     // sensors
+                case 's':     // sensors in Nexys
                   sscanf(line, "# x s %lf C %lf hPa", &(Data->temperature), &(Data->pressure)); // not reading altitude
+                  break;
+				case 'p':     // pressure in RP
+                  sscanf(line, "# x p %lf", &(Data->pressure)); 
+                  break;
+				case 't':     // temperature in RP
+                  sscanf(line, "# x t %lf", &(Data->temperature)); 
                   break;
                 case 'f':     // clock frequency 
                   sscanf(line, "# x f %d\n", &(Data->clockfrequency));

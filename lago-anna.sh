@@ -10,7 +10,7 @@
 # License:     BSD-3-Clause
 # See the LICENSE file in the project root for full license information.
 ################################################################################
-VERSION="1.5.0"
+VERSION="2.0.0"
 export LAGO_ANNA=${PWD}
 date=$(date -u)
 echo "#

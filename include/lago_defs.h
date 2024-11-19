@@ -20,12 +20,13 @@
 #define CODEVERSION "v5"
 #define DATAVERSION 5 
 
-#define CHANNELS 3
+#define CHANNELS 2
 #define TRACELEN 12
 #define BASELINE 50
 #define BIN 25.
 #define ADCMAX 1024
 #define CHRGMAX 4096
+#define CHRGMIN 0
 #define TRIGGERBIN 3
 
 #endif
